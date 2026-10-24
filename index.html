@@ -311,12 +311,15 @@ const ROOM_LIGHT = 22;
 const roomX0 = (r) => (r < 4 ? -39 + 9 * r : 3 + 9 * (r - 4));
 
 // ================= 렌더러 / 씬 =================
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });   // 노트북이면 외장 그래픽 사용
 renderer.domElement.id = 'game';
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// 해상도: 고해상도 화면에서도 1배까지만, 프레임이 떨어지면 자동으로 더 낮춤 (아래 루프)
+const MAX_Q = Math.min(devicePixelRatio, 1);
+let renderQ = MAX_Q;
+renderer.setPixelRatio(renderQ);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;   // 부드러운 그림자(PCFSoft)보다 가벼움
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.4;
 document.body.prepend(renderer.domElement);
@@ -6076,7 +6079,23 @@ renderer.setAnimationLoop(() => {
   camera.position.x -= sx; camera.position.y -= sy;
   if (lookBack) camera.quaternion.copy(_qBack);
   if ((frame++ & 1) === 0) drawGrain();
+  adaptQuality();
 });
+// 프레임이 낮으면 렌더 해상도를 단계적으로 낮추고, 여유가 생기면 (실패했던 단계 아래까지만) 다시 올림
+let qT0 = performance.now(), qFrames = 0, qGood = 0, qCeil = MAX_Q + 0.01;
+const qStart = performance.now() + 4000;   // 처음 셰이더 준비 중 끊김은 무시
+function adaptQuality() {
+  const now = performance.now();
+  qFrames++;
+  if (now - qT0 < 2000) return;
+  const fps = qFrames * 1000 / (now - qT0);
+  qT0 = now; qFrames = 0;
+  if (document.hidden || now < qStart) return;
+  let q = renderQ;
+  if (fps < 48 && renderQ > 0.5) { qCeil = renderQ; q = Math.max(0.5, renderQ - 0.15); qGood = 0; }
+  else if (fps > 57 && ++qGood >= 3 && renderQ + 0.1 < qCeil) { q = Math.min(MAX_Q, renderQ + 0.1); qGood = 0; }
+  if (q !== renderQ) { renderQ = q; renderer.setPixelRatio(q); }
+}
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
