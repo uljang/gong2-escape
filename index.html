@@ -58,6 +58,8 @@
     text-shadow: 0 0 16px #600; pointer-events: none; opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
   #countdown { position: fixed; left: 50%; top: 33%; transform: translateX(-50%); color: #f0e0d8; font-size: 96px; font-weight: 200;
     text-shadow: 0 0 24px #000; pointer-events: none; }
+  #qteBar { position: fixed; left: 50%; top: 47%; width: 320px; height: 10px; margin-left: -160px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.35); display: none; pointer-events: none; }
+  #qteBar div { height: 100%; width: 100%; background: linear-gradient(90deg, #d42020, #ff8a3a); }
   #gameover { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 11;
     background: radial-gradient(circle, rgba(90,0,0,0.85), #000 75%); opacity: 0; transition: opacity 1.5s ease; }
   #gameover h1 { color: #d01818; font-size: 52px; letter-spacing: 12px; font-weight: 400; text-shadow: 0 0 20px #500; margin: 0 0 34px; }
@@ -230,6 +232,7 @@
 <div id="hp"><div id="hpFill"></div><span>HP</span></div>
 <div id="warn"></div>
 <div id="countdown"></div>
+<div id="qteBar"><div></div></div>
 <div id="gameover"><h1>당신은 죽었습니다</h1><button id="btnContinue" style="display:none;margin-bottom:12px" onclick="location.href=location.pathname+'?continue=1'">마지막 저장 지점에서 다시 시작</button><button onclick="location.href=location.pathname">처음부터 다시 하기</button></div>
 <div id="saved">💾 자동 저장됨</div>
 <div id="objective">목표 &nbsp;·&nbsp; 학교를 탈출하십시오</div>
@@ -313,7 +316,7 @@
     </div>
     <div id="modelNote" style="margin-top:18px;font-size:12px;color:#8d6a5a;display:none"></div>
   </div>
-  <div class="foot">헤드폰 착용을 권장합니다<br>이 게임은 허구이며 실제 인물·사건과 관계없습니다</div>
+  <div class="foot"><span id="sndHint" style="color:#9a4a42">화면을 클릭하면 소리가 켜집니다<br></span>헤드폰 착용을 권장합니다<br>이 게임은 허구이며 실제 인물·사건과 관계없습니다</div>
 </div>
 <div id="settings">
   <div class="box">
@@ -1091,10 +1094,9 @@ function bayType(k, n) {
   if (k === 0) return n === 3 ? 'stair' : n === 0 ? 'blank' : 'xwin';   // 4층: 홀 방화문 / 2·3층: 엘베 맞은편 X가새 창 / 1층: 벽
   if (k === 1) return n === 3 ? 'blank' : 'stair';                         // 1~3층: 계단실 문
   if (k === 19) return n === 0 ? 'blank' : 'design';
-  if (k === 18 && n === 0) return 'blank';              // 1층 101호 앞: 창문 없이 벽    // 우측 끝 설계실
   if (k === 8 || k === 11) return 'blank';
   if (k === 9 || k === 10) return 'mid';                // 가운데 홀 입구
-  return 'window';
+  return n === 0 ? 'blank' : 'window';                  // 1층 복도는 창문 없이 벽
 }
 
 function signPlane(tex, w, h, x, y, z, ry = 0, glow = false) {
@@ -3078,7 +3080,7 @@ for (let n = 0; n < 4; n++) {
         dr.pivot.position.x = cx + 0.8;
         for (const c of dr.pivot.children) c.position.x = -c.position.x;
         dr.mirror = true; updateDoorCollider(dr);
-        dl.pair = dr; dr.pair = dl; dl.kneeBlock = dr.kneeBlock = true;
+        dl.pair = dr; dr.pair = dl;   // (가운데 계단과 달리 처음부터 열 수 있음)
         if (n === 2) for (const d of [dl, dr]) { d.open = true; d.angle = d.target = d.mirror ? 1.75 : -1.75; d.pivot.rotation.y = d.angle; updateDoorCollider(d); }
         navDoorRefs['L' + n] = dl;
       }
@@ -3222,6 +3224,7 @@ for (let n = 0; n < 4; n++) {
           label: isAi && off === 1.2 ? '410호 회의실' : `${name}호 ${title}`,
         });
         navDoorRefs[`${n}-${r}-${off}`] = door;
+        if (isStudio && off === 1.2) { door.angle = door.target = 0.45; door.pivot.rotation.y = 0.45; updateDoorCollider(door); }   // 살짝 열린 문틈
         if (isLab && keypadDoor) door.code = '1117';
         if (n === 1 && r === 2) {   // 건축진동 및 제어 연구실: 문에 붙은 종이
           const note = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.32), new THREE.MeshStandardMaterial({ map: doorNoteTex, roughness: 0.9 }));
@@ -3297,6 +3300,12 @@ addRoom('corridor4', {   // 4층 복도등 (엘리베이터 옆 스위치, 적�
   sw: [-40.2, 3 * FH + 1.3, 0.02, 0],
 });
 const corrRooms = [1, 2, 3, 4].map((f) => ROOMS.find((r) => r.id === `corridor${f}`));
+for (let n = 0; n < 4; n++) {   // 엘리베이터 앞: 항상 불이 켜져 있음
+  const y0 = n * FH;
+  for (const x of [-42.0, -39.6]) sbox(x - 0.3, x + 0.3, y0 + CH - 0.016, y0 + CH - 0.001, 1.65, 2.25, lampKeyFor('elev' + n));
+  const r = addRoom('elev' + n, { x0: -HALF, x1: -38.4, z0: -0.2, z1: 3.0, y0, mult: 0.9, anchors: [[-42.0, 1.6], [-39.6, 1.6]] });
+  r.on = true; r.t0 = -10;
+}
 {   // 4층 엘리베이터 왼쪽 벽: 노래동아리 '바다' 홍보 포스터
   const tx = labelTex(360, 512, (g, W, H) => {
     const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#0b3d6e'); gr.addColorStop(0.6, '#1a7fb8'); gr.addColorStop(1, '#7fd3f0');
@@ -4292,7 +4301,7 @@ class LookControls extends THREE.EventDispatcher {
 }
 const controls = new LookControls(camera, document.body);
 const overlay = document.getElementById('overlay');
-overlay.addEventListener('pointerdown', () => initAudio());   // 아무 데나 누르면 소리 시작 (시작 화면 형광등 소리)
+overlay.addEventListener('pointerdown', (e) => { initAudio(); if (!e.target.closest('#btnStart, #btnExplore, #btnResume')) startTitleMusic(); });   // 아무 데나 누르면 소리 시작 (브라우저는 클릭 전엔 소리를 막음)
 let gameBegun = false;
 document.getElementById('btnStart').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -4405,8 +4414,61 @@ function updateTitle(dt, t) {
   } else if (c < 1) titleSaved.stung = false;
   updateCulpritModel(dt);
 }
+// 시작 화면 음악: 낮게 깔리는 불협 드론 + 띄엄띄엄 울리는 오르골 음 (메아리) + 가끔 낮은 쿵
+let titleMusic = null;
+function startTitleMusic() {
+  if (!actx || titleMusic || !titleMode) return;
+  const sh = document.getElementById('sndHint'); if (sh) sh.style.display = 'none';
+  const t0 = actx.currentTime, out = actx.createGain();
+  out.gain.setValueAtTime(0.0001, t0); out.gain.exponentialRampToValueAtTime(1, t0 + 5); out.connect(master);
+  const echo = actx.createDelay(2), fb = actx.createGain(), elp = actx.createBiquadFilter();   // 메아리
+  echo.delayTime.value = 0.48; fb.gain.value = 0.5; elp.type = 'lowpass'; elp.frequency.value = 1600;
+  echo.connect(elp).connect(fb).connect(echo); elp.connect(out);
+  const srcs = [];
+  for (const [f, det, v] of [[36.7, 0, 0.11], [55.0, 5, 0.06], [73.4, -7, 0.05], [77.8, 4, 0.02], [110, 9, 0.015]]) {   // D 드론 + 단2도 불협
+    const o = actx.createOscillator(), fl = actx.createBiquadFilter(), g = actx.createGain(), lfo = actx.createOscillator(), lg = actx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+    fl.type = 'lowpass'; fl.frequency.value = 170; fl.Q.value = 3;
+    lfo.frequency.value = 0.04 + Math.random() * 0.08; lg.gain.value = 110;   // 천천히 열렸다 닫히는 필터
+    lfo.connect(lg).connect(fl.frequency);
+    g.gain.value = v;
+    o.connect(fl).connect(g).connect(out);
+    o.start(); lfo.start(); srcs.push(o, lfo);
+  }
+  const notes = [587.3, 698.5, 659.3, 554.4, 587.3, 466.2, 440.0, 415.3, 440.0, 349.2];   // D 단조 + 반음 내려가는 음
+  let i = 0;
+  const bell = () => {
+    if (!titleMusic || titleMusic.stop) return;
+    if (Math.random() > 0.18) {   // 가끔 쉼
+      const t = actx.currentTime, f = notes[i++ % notes.length] * (Math.random() < 0.15 ? 0.5 : 1);
+      const g = actx.createGain(), o = actx.createOscillator(), o2 = actx.createOscillator(), g2 = actx.createGain();
+      o.type = 'triangle'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2.76; g2.gain.value = 0.25;   // 오르골 같은 배음
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
+      o.connect(g); o2.connect(g2).connect(g); g.connect(out); g.connect(echo);
+      o.start(t); o2.start(t); o.stop(t + 2.7); o2.stop(t + 2.7);
+    }
+    titleMusic.bellT = setTimeout(bell, 900 + Math.random() * 1500);
+  };
+  const boom = () => {   // 멀리서 울리는 낮은 쿵
+    if (!titleMusic || titleMusic.stop) return;
+    noiseBurst(1.4, 55, 0.35); noiseBurst(0.6, 90, 0.15, 0.05);
+    titleMusic.boomT = setTimeout(boom, 9000 + Math.random() * 8000);
+  };
+  titleMusic = { out, srcs, echo };
+  titleMusic.bellT = setTimeout(bell, 2500);
+  titleMusic.boomT = setTimeout(boom, 6000);
+}
+function stopTitleMusic() {
+  if (!titleMusic) return;
+  const m = titleMusic; m.stop = true;
+  clearTimeout(m.bellT); clearTimeout(m.boomT);
+  const t = actx.currentTime;
+  m.out.gain.cancelScheduledValues(t); m.out.gain.setValueAtTime(m.out.gain.value, t); m.out.gain.linearRampToValueAtTime(0.0001, t + 1.5);
+  setTimeout(() => { for (const o of m.srcs) { try { o.stop(); } catch (e) { /* 이미 멈춤 */ } } m.out.disconnect(); }, 1700);
+}
 function exitTitle() {
   if (!titleMode) return;
+  stopTitleMusic();
   titleMode = false;
   document.body.classList.remove('menu-on');
   if (titleSaved) {
@@ -4828,7 +4890,7 @@ const story = { stage: 'start', goneT: 0 };
 let peek = null, smashT = 0, lastSlam = 0, chaseStepT = 0, heartT = 0;
 const trail = [];
 const chaser = { idx: 0, waits: null, waitT: 0, walkPhase: 0 };
-const PEEK_POS = new THREE.Vector3(STUDIO.doorX, 2 * FH + 1.5, -0.35);
+const PEEK_POS = new THREE.Vector3(STUDIO.doorX + 0.33, 2 * FH + 1.5, -0.12);   // 살짝 열린 문틈 (경첩 반대쪽)
 const _cv = new THREE.Vector3(), _head = new THREE.Vector3();
 
 function slamSound(vol) { noiseBurst(0.14, 260, vol); noiseBurst(0.09, 1400, vol * 0.5, 0.02); }
@@ -5006,6 +5068,7 @@ function updatePeek(dt) {
 }
 function startChase() {
   story.stage = 'chase';
+  { const d = navDoorRefs['2-0-1.2']; if (d) { d.open = true; d.target = 1.75; noiseBurst(0.18, 160, 0.8); } }   // 범인이 문을 박차고 나옴
   sayTimed('뭔데뭔데뭔데뭔데?!!', 2000);
   setObjective('1층 라운지 쪽으로 도망치십시오', false);
   camera.position.set(player.x, player.feet + EYE, player.z);
@@ -5268,7 +5331,7 @@ function updateStory(dt, t) {
       sayTimed('범인이 넘어졌다…!', 2300);
     }
   }
-  if (story.comp === 'ambush' && ai.boostT <= 0 && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'lurk'].includes(ai.state)) {
+  if (story.comp === 'ambush' && ai.boostT <= 0 && eyeClear() && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'lurk'].includes(ai.state)) {
     story.comp = 'done';
     knockSign(true);
     sayTimed('따돌린 것 같다… 이제 컴퓨터실 문을 열 수 있겠어.', 3000);
@@ -5295,7 +5358,7 @@ function keyEventStartChase() {
     && losClear(culprit.g.position.x, culprit.g.position.z, player.x, player.z, player.feet + 1.5);
   if (!ai.active) startRoaming();
   if (!visible) {   // 복도 저쪽(오른쪽 = 서쪽 끝)에서 나타남
-    culprit.g.position.set(-24, 2 * FH, 1.4);
+    culprit.g.position.set(-36, 2 * FH, 1.4);
     culprit.g.rotation.set(0, Math.PI / 2, 0);
   }
   culprit.g.visible = true;
@@ -5331,10 +5394,15 @@ function removeDroppedKey() {
 }
 function updateKeyEvent() {
   if (exploreMode || dead) return;
+  if (!story.officeHint && !story.keyEv && hasItem('cardkey') && Math.abs(player.feet - 3 * FH) < 0.3 && player.z > 0.1) {   // 들켜서 쫓기다 나온 경우에도 안내
+    story.officeHint = true;
+    if (ai.state !== 'chase') setObjective('과사무실로 가십시오');
+  }
   const ev = story.keyEv, on3 = Math.abs(player.feet - 2 * FH) < 0.3;
   // 409호 수색이 끝난 뒤 복도로 나오면: 범인은 사라지고 셔터 열쇠를 얻을 때까지 안 나옴
   if (!ev && story.aiRaidDone && Math.abs(player.feet - 3 * FH) < 0.3 && player.z > 0.1 && ai.state !== 'chase' && ai.state !== 'getHidden') {
     story.keyEv = 'quiet';
+    if (hasItem('cardkey')) setObjective('과사무실로 가십시오');
     if (ai.active) { ai.state = 'leave'; ai.path = null; aiGoTo(6.75, 2 * FH, 4); }
     return;
   }
@@ -5354,7 +5422,7 @@ function updateKeyEvent() {
   if (droppedKey && culprit.g.visible && Math.abs(culprit.g.position.y - story.keyDrop.y) < 1
     && Math.hypot(culprit.g.position.x - story.keyDrop.x, culprit.g.position.z - story.keyDrop.z) < 0.9) removeDroppedKey();
   // 따돌리면 열쇠를 떨어뜨린 걸 알아챔
-  if (ev === 'dropped' && !mono && !lookCam && ai.boostT <= 0 && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'grab'].includes(ai.state)) {
+  if (ev === 'dropped' && !mono && !lookCam && ai.boostT <= 0 && eyeClear() && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'grab'].includes(ai.state)) {
     story.keyEv = 'lost';
     monologue(['도망치던 중 열쇠를 떨어뜨렸다', '다시 찾으러 가야 해'], { onDone: () => setObjective('3층 가운데 복도에서 열쇠를 찾으십시오') });
     return;
@@ -5389,14 +5457,14 @@ function updateKeyEvent() {
     return;
   }
   // 들켜서 쫓기다 따돌리면 다시 처음처럼 등을 돌리고 돌아다님
-  if ((ev === 'stalk' || ev === 'stalkSeen') && ai.active && ai.boostT <= 0 && ['patrol', 'search', 'investigate'].includes(ai.state) && !culpritOnScreen(40)) {
+  if ((ev === 'stalk' || ev === 'stalkSeen') && ai.active && ai.boostT <= 0 && eyeClear() && ai.state === 'patrol' && !culpritOnScreen(40)) {
     story.keyEv = 'stalk';
     ai.state = 'stalk'; ai.path = null; ai.waitT = 0;
     sayTimed('따돌렸다… 다시 몰래 다가가야 해', 2400);
     return;
   }
   // 걷어차고 도망친 뒤 따돌리면 그때 셔터를 열 수 있음
-  if (ev === 'flee' && !mono && ai.boostT <= 0 && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'grab', 'stun'].includes(ai.state)) {
+  if (ev === 'flee' && !mono && ai.boostT <= 0 && eyeClear() && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'grab', 'stun'].includes(ai.state)) {
     story.keyEv = 'escaped';
     monologue(['…따돌린 것 같다', '이제 1층 셔터로 가자'], { onDone: () => { setObjective('1층 셔터를 열고 탈출하십시오'); autoSave(); } });
   }
@@ -5485,9 +5553,9 @@ function dropKoKey() {   // 쓰러진 범인 옆에 셔터 열쇠가 떨어짐
 // 열쇠를 줍자마자 범인이 일어나 공격: 정해진 키를 눌러 3번 피하고, SPACE 로 걷어참
 let qte = null;
 const QTE_SEQ = [
-  { code: 'KeyA', key: 'A', dir: -1, txt: '← 왼쪽으로 피하세요!', win: 1.5 },
-  { code: 'KeyD', key: 'D', dir: 1, txt: '오른쪽으로 피하세요! →', win: 1.3 },
-  { code: 'KeyS', key: 'S', dir: 0, txt: '↓ 몸을 숙이세요!', win: 1.2 },
+  { code: 'KeyA', key: 'A', dir: -1, txt: '← 왼쪽으로 피하세요!', win: 5 },
+  { code: 'KeyD', key: 'D', dir: 1, txt: '오른쪽으로 피하세요! →', win: 5 },
+  { code: 'KeyS', key: 'S', dir: 0, txt: '↓ 몸을 숙이세요!', win: 5 },
 ];
 const _qr = new THREE.Vector3();
 function startQte() {
@@ -5503,7 +5571,8 @@ function qtePrompt(big, txt) {
   warnEl.textContent = txt; warnEl.style.opacity = 1;
   countEl.style.fontSize = '72px'; countEl.textContent = big;
 }
-function endQteUI() { warnEl.style.opacity = 0; countEl.textContent = ''; countEl.style.fontSize = ''; }
+const qteBarEl = document.getElementById('qteBar');
+function endQteUI() { warnEl.style.opacity = 0; countEl.textContent = ''; countEl.style.fontSize = ''; qteBarEl.style.display = 'none'; }
 function nextQte() {
   qte.t = 0;
   if (qte.i < QTE_SEQ.length) {
@@ -5512,7 +5581,7 @@ function nextQte() {
     qtePrompt(s.key, s.txt);
     beep(880, 0.12);
   } else {
-    qte.phase = 'kick'; qte.win = 1.8;
+    qte.phase = 'kick'; qte.win = 5;
     qtePrompt('SPACE', '지금이야! 걷어차세요!');
     beep(1100, 0.15);
   }
@@ -5545,7 +5614,11 @@ function updateQte(dt) {
   camera.quaternion.slerp(_q4, 1 - Math.exp(-dt * 8));
   if (q.phase === 'rise') { if (q.t > 1.0) nextQte(); }
   else if (q.phase === 'swing') { if (q.t > 0.6) nextQte(); }
-  else if (q.t > q.win) qteFail();   // 제때 못 누름 → 맞음
+  else {   // 남은 시간 게이지
+    qteBarEl.style.display = 'block';
+    qteBarEl.firstChild.style.width = Math.max(0, 1 - q.t / q.win) * 100 + '%';
+    if (q.t > q.win) qteFail();   // 제때 못 누름 → 맞음
+  }
 }
 function qteFail() {
   endQteUI();
@@ -6295,8 +6368,9 @@ function updateAI(dt, t) {
     if (ai.waitT > 0) { ai.waitT -= dt; aiIdleAnim(); culprit.g.rotation.y += Math.sin(t * 1.5) * dt; return; }
     if (aiFollow(1.5, dt)) {
       // 다음 목적지: 반쯤은 플레이어가 있는 층 근처, 나머지는 아무 곳
-      const sameFloor = PATROL_NODES.filter((p) => Math.abs(p.y - player.feet) < 1 && Math.hypot(p.x - player.x, p.z - player.z) < 25);
-      const pick = Math.random() < 0.55 && sameFloor.length ? sameFloor[(Math.random() * sameFloor.length) | 0] : PATROL_NODES[(Math.random() * PATROL_NODES.length) | 0];
+      // 다음 목적지: 1~4층 중 아무 층이나 골고루 고른 뒤 그 층의 아무 곳
+      const fl = (Math.random() * 4) | 0, onFl = PATROL_NODES.filter((p) => Math.round(p.y / FH) === fl);
+      const pick = onFl.length ? onFl[(Math.random() * onFl.length) | 0] : PATROL_NODES[(Math.random() * PATROL_NODES.length) | 0];
       if (!aiGoTo(pick.x, pick.y, pick.z)) ai.waitT = 0.5;
       else if (Math.random() < 0.5) ai.waitT = 0.5 + Math.random() * 1.5;
     }
@@ -6435,16 +6509,19 @@ function gameOver() {
 }
 // 위쪽 눈알 표시 (화이트데이처럼): 근처면 좌우로 두리번, 들켜서 쫓아오면 커짐
 const eyeEl = document.getElementById('eye');
+let eyeSeenT = -99;   // 눈알이 마지막으로 떠 있던 시각 (추격이 확실히 끝났는지 판단)
+const EYE_ALERT = ['chase', 'getHidden', 'turn', 'grab', 'recover', 'trip', 'qte', 'stun'];
+const EYE_LOOK = ['investigate', 'search', 'raid', 'raidEnter', 'raidLap'];
 function updateEye() {
   let mode = '';
   if (culprit.g.visible && !dead && !intro && ai.state !== 'lurk' && story.comp !== 'toComp') {
-    const { d, dy } = playerDist();
-    const chasing = story.stage === 'chase' || (ai.active && (ai.state === 'chase' || ai.state === 'getHidden'));
-    if (chasing && d < 35) mode = 'alert';
-    else if ((story.stage === 'search' || ai.active) && d < 18 && dy < 4.5) mode = 'look';
+    if (story.stage === 'chase' || (ai.active && EYE_ALERT.includes(ai.state))) mode = 'alert';
+    else if (story.stage === 'search' || (ai.active && EYE_LOOK.includes(ai.state))) mode = 'look';
   }
+  if (mode) eyeSeenT = clock.elapsedTime;
   if (eyeEl.className !== mode) eyeEl.className = mode;
 }
+const eyeClear = (sec = 5) => clock.elapsedTime - eyeSeenT > sec;   // 눈알이 사라진 지 sec초 지남
 function updateStairSensors(t) {
   for (const sd of STAIR_DEFS) {
     const inside = player.x > (sd.hx0 ?? sd.xa) && player.x < sd.xb && player.z > sd.zmin && player.z < sd.zmax;
@@ -6524,6 +6601,7 @@ function chooseLook(yes) {
   if (yes) startPeek();
   else {
     story.stage = 'home';   // 모른 척하고 귀가 → 1층 엘베 쪽 출입문만 정상 작동
+    { const d = navDoorRefs['2-0-1.2']; if (d) { d.open = false; d.target = 0; d.locked = true; setTimeout(() => noiseBurst(0.12, 140, 0.5), 500); } }   // 설계실 문이 닫힘 (안을 못 봄)
     homePrev = { x: player.x, z: player.z, feet: player.feet };
     sayTimed('…모른 척하고 집에 가자.', 2200);
     setObjective('귀가하십시오 (1층 왼쪽 출입문)');
