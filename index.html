@@ -1014,7 +1014,36 @@ function floor1Rooms(y0, K) {
   }
 }
 // 2~4층 우측 끝: 설계실·계단 앞 방화구획 벽 + 양쪽으로 활짝 열어 고정해 둔 방화문 (상호작용 없음)
-const FIRE_X0 = 39.1, FIRE_PILLAR = 40.85;   // 방화구획 벽 위치 / 옮긴 창가 기둥 중심
+const FIRE_X0 = 39.1, FIRE_PILLAR = 40.85;
+const EAST_EXIT = [-3.45, -1.85];   // 1층 동쪽 출입문: 오른쪽 계단 밑 (z 범위)
+const EXHIBIT_BACK_X = 35.5;        // 1층 오른쪽 계단 앞 막다른 벽 (전시실 뒷문)
+const LECT101 = [41.6, 43.6];       // 1층 계단 정면 101호 강의실 문 (x 범위)
+function woodDoubleDoor(axis, c, p, y0, w, h, face, it) {   // 강당·시청각실 같은 두꺼운 나무 양문 (닫힌 채, 클릭하면 잠김 안내)
+  if (!M.audWood) M.audWood = std({ color: 0x6a4428, roughness: 0.55 });
+  if (!M.audWoodDark) M.audWoodDark = std({ color: 0x4a2e1a, roughness: 0.6 });
+  const put = (u0, u1, y0_, y1, w0, w1, key) => (axis === 'z' ? sbox(u0, u1, y0_, y1, w0, w1, key) : sbox(w0, w1, y0_, y1, u0, u1, key));
+  const T = 0.09, lw = w / 2, f = face;   // f: 복도 쪽 방향 (+1 / -1)
+  put(c - w / 2 - 0.08, c - w / 2, y0, y0 + h + 0.08, p - 0.14, p + 0.14, 'audWoodDark');   // 문틀
+  put(c + w / 2, c + w / 2 + 0.08, y0, y0 + h + 0.08, p - 0.14, p + 0.14, 'audWoodDark');
+  put(c - w / 2 - 0.08, c + w / 2 + 0.08, y0 + h, y0 + h + 0.08, p - 0.14, p + 0.14, 'audWoodDark');
+  for (const sd of [-1, 1]) {
+    const u0 = sd < 0 ? c - lw : c + 0.004, u1 = sd < 0 ? c - 0.004 : c + lw;
+    put(u0, u1, y0, y0 + h, p - T / 2, p + T / 2, 'audWood');   // 문짝
+    for (const [ya, yb] of [[0.25, 1.05], [1.2, h - 0.2]]) {   // 몰딩 판
+      put(u0 + 0.1, u1 - 0.1, y0 + ya, y0 + ya + 0.025, p + f * T / 2, p + f * (T / 2 + 0.012), 'audWoodDark');
+      put(u0 + 0.1, u1 - 0.1, y0 + yb - 0.025, y0 + yb, p + f * T / 2, p + f * (T / 2 + 0.012), 'audWoodDark');
+      put(u0 + 0.1, u0 + 0.125, y0 + ya, y0 + yb, p + f * T / 2, p + f * (T / 2 + 0.012), 'audWoodDark');
+      put(u1 - 0.125, u1 - 0.1, y0 + ya, y0 + yb, p + f * T / 2, p + f * (T / 2 + 0.012), 'audWoodDark');
+    }
+    const hx = sd < 0 ? c - 0.09 : c + 0.07;   // 가운데 쪽 긴 세로 손잡이
+    put(hx, hx + 0.02, y0 + 0.75, y0 + 1.45, p + f * (T / 2 + 0.05), p + f * (T / 2 + 0.07), 'gold');
+    for (const yy of [0.8, 1.4]) put(hx, hx + 0.02, y0 + yy - 0.015, y0 + yy + 0.015, p + f * T / 2, p + f * (T / 2 + 0.07), 'gold');
+    put(u0 + 0.03, u1 - 0.03, y0 + 0.02, y0 + 0.22, p + f * T / 2, p + f * (T / 2 + 0.004), 'alu');   // 발판
+  }
+  if (axis === 'z') addCol(c - w / 2, c + w / 2, y0, y0 + h, p - T, p + T); else addCol(p - T, p + T, y0, y0 + h, c - w / 2, c + w / 2);
+  if (axis === 'z') addProxy(c - w / 2, c + w / 2, y0, y0 + h, p - 0.06 + f * 0.04, p + 0.06 + f * 0.04, it);
+  else addProxy(p - 0.06 + f * 0.04, p + 0.06 + f * 0.04, y0, y0 + h, c - w / 2, c + w / 2, it);
+}   // 방화구획 벽 위치 / 옮긴 창가 기둥 중심
 function steelLocker(x0, x1, y0) {   // 철제 사물함: 2단 × 5칸, 칸마다 문·환기구·손잡이·번호표
   if (!M.lockerSteel) M.lockerSteel = std({ color: 0x8e959b, roughness: 0.45, metalness: 0.45 });
   if (!M.lockerDoor) M.lockerDoor = std({ color: 0xa3aab0, roughness: 0.4, metalness: 0.4 });
@@ -1489,6 +1518,14 @@ function lounge(y0) {
     for (const sx of [-0.4, 0.3]) for (const sz of [-0.85, 0.85]) part(sx - 0.015, sx + 0.015, 0, 0.28, sz - 0.015, sz + 0.015, 'darkMetal');
   };
   prop(4.95, y0, -1.75, Math.PI / 2, sofa);    // 소파 A: 복도를 등짐
+  {   // 복사기와 소파 A 사이: 검은 테두리의 얇은 유리 칸막이
+    const gx0 = 3.72, gx1 = X1 - 0.02, gz = -1.2, gh = 1.9;
+    sbox(gx0 + 0.03, gx1 - 0.03, y0 + 0.05, y0 + gh - 0.03, gz - 0.006, gz + 0.006, 'glass');
+    sbox(gx0, gx1, y0, y0 + 0.05, gz - 0.025, gz + 0.025, 'black');
+    sbox(gx0, gx1, y0 + gh - 0.03, y0 + gh, gz - 0.02, gz + 0.02, 'black');
+    for (const x of [gx0, gx1 - 0.03]) sbox(x, x + 0.03, y0, y0 + gh, gz - 0.02, gz + 0.02, 'black');
+    addCol(gx0, gx1, y0, y0 + gh, gz - 0.03, gz + 0.03);
+  }
   prop(4.95, y0, -4.3, -Math.PI / 2, sofa);    // 소파 B: 복도 쪽을 봄
   const roundTable = (x, z, r, h) => {
     const top = new THREE.CylinderGeometry(r, r, 0.03, 32); top.translate(x, y0 + h, z); addGeo(top, 'quartz');
@@ -2822,7 +2859,7 @@ function woodRailX(xa, xb, z, y, h = 0.95) {   // x 방향 수평 난간
 }
 
 // ---------- 계단 (U자형). s: 복도에서 들어가는 방향(z 부호), z0: 계단실 입구 면 ----------
-function buildStair({ xa, xb, z0, s, side = null, back = false, header = false, signWall = false, signFront = false }) {
+function buildStair({ xa, xb, z0, s, side = null, back = false, header = false, signWall = false, signFront = false, open1F = false }) {
   const mid = (xa + xb) / 2, dl = mid - 0.15, dr = mid + 0.15;
   const Z = (d) => z0 + s * d;
   const zr = (d0, d1) => [Math.min(Z(d0), Z(d1)), Math.max(Z(d0), Z(d1))];
@@ -2860,11 +2897,11 @@ function buildStair({ xa, xb, z0, s, side = null, back = false, header = false, 
       box(xa, dl, n === 0 ? 0 : topU - r - 0.12, topU, 1.6 + i * g, 1.6 + (i + 1) * g, 'stair');
       box(xa, dl, topU - 0.01, topU + 0.005, 1.6 + i * g, 1.6 + i * g + 0.05, 'darkMetal');
       const topD = y0 + 2 + (i + 1) * r;
-      box(dr, xb, n === 0 ? 0 : topD - r - 0.12, topD, 5.6 - (i + 1) * g, 5.6 - i * g, 'stair');
+      box(dr, xb, n === 0 && !open1F ? 0 : topD - r - 0.12, topD, 5.6 - (i + 1) * g, 5.6 - i * g, 'stair');
       box(dr, xb, topD - 0.01, topD + 0.005, 5.6 - i * g - 0.05, 5.6 - i * g, 'darkMetal');
     }
-    if (n > 0) {   // 계단 밑면
-      for (const [x0, x1, cy, ang] of [[xa, dl, y0 + 0.62, -s * slope], [dr, xb, y0 + 2.62, s * slope]]) {
+    if (n > 0 || open1F) {   // 계단 밑면 (1층을 비운 계단은 올라가는 쪽만)
+      for (const [x0, x1, cy, ang] of [[xa, dl, y0 + 0.62, -s * slope], [dr, xb, y0 + 2.62, s * slope]].slice(n === 0 ? 1 : 0)) {
         const geo = new THREE.BoxGeometry(x1 - x0, 0.15, 4.5);
         geo.applyMatrix4(new THREE.Matrix4().makeRotationX(ang).setPosition((x0 + x1) / 2, cy, Z(3.6)));
         addGeo(geo, 'stair');
@@ -2875,7 +2912,8 @@ function buildStair({ xa, xb, z0, s, side = null, back = false, header = false, 
     surfaces.push({ x0: dr, x1: xb, z0: fz0, z1: fz1, h: (x, z) => y0 + 2 + (5.6 - s * (z - z0)) / 2 });
     box(xa, xb, y0 + 1.7, y0 + 2, 5.6, 7.4, 'stair');
     flatD(xa, xb, 5.6, 7.4, y0 + 2);
-    if (n === 0) { const [a, b] = zr(1.6, 5.6); addCol(dr, xb, 0, 1.9, a, b); }   // 1층 계단 밑 공간
+    if (n === 0 && open1F) { flatD(dr, xb, 1.6, 3.7, 0); const [a, b] = zr(3.7, 5.6); addCol(dr, xb, 0, 1.9, a, b); }   // 1층 계단 밑: 외부 출입문까지 지나갈 수 있음
+    else if (n === 0) { const [a, b] = zr(1.6, 5.6); addCol(dr, xb, 0, 1.9, a, b); }   // 1층 계단 밑 공간
   }
 }
 
@@ -2951,6 +2989,7 @@ for (let n = 0; n < 4; n++) {
     let hole = null;
     const stairCx = n === 3 ? WEST_HALL.cx : (LEFT_STAIR.xa + LEFT_STAIR.xb) / 2;
     if (type === 'stair') hole = { a: stairCx - 0.55, b: stairCx + 0.55, c: y0, d: y0 + 2.2 };
+    if (n === 0 && k === 19) hole = { a: LECT101[0], b: LECT101[1], c: y0, d: y0 + 2.45 };   // 101호 강의실 문
     if (type === 'design') hole = { a: DESIGN_DOOR - 0.5, b: DESIGN_DOOR + 0.5, c: y0, d: y0 + 2.15 };
     const holes = hole ? [hole] : [];
     wallZ(wx0, wx1, y0, y0 + FH, 3.0, CW, holes, K('paint'));
@@ -3017,6 +3056,20 @@ for (let n = 0; n < 4; n++) {
   }
   elevator(y0);
   if (n === 0) floor1Rooms(y0, K);
+  if (n === 0) {   // 오른쪽 계단에서 내려와 오른쪽: 조금 가면 전시실 뒷벽 + 뒷문 (막다른 길)
+    wallX(-0.2, 3.0, y0, y0 + CH, EXHIBIT_BACK_X - 0.1, EXHIBIT_BACK_X + 0.1, [{ a: 0.5, b: 2.3, c: y0, d: y0 + 2.45 }], K('paint'));
+    sbox(EXHIBIT_BACK_X - 0.6, EXHIBIT_BACK_X - 0.1, y0, y0 + 2.6, 0.4, 2.4, 'black');   // 문 너머 (어둠)
+    woodDoubleDoor('x', 1.4, EXHIBIT_BACK_X, y0, 1.8, 2.45, 1, { type: 'exhibit' });
+    signPlane(textTex(256, 72, '#2b2b2b', '#e8e2d2', [['전 시 실', 36, 0.55]]), 0.42, 0.12, EXHIBIT_BACK_X + 0.106, y0 + 2.75, 1.4, Math.PI / 2);
+    // 계단 정면: 101호 강의실 (카드키, 열리지 않음)
+    const c101 = (LECT101[0] + LECT101[1]) / 2;
+    sbox(LECT101[0] - 0.2, LECT101[1] + 0.2, y0, y0 + 2.7, CW + 0.01, CW + 0.6, 'black');
+    woodDoubleDoor('z', c101, 3.1, y0, LECT101[1] - LECT101[0], 2.45, -1, { type: 'lockedRoom', label: '101호 강의실', card: true });
+    sbox(LECT101[1] + 0.2, LECT101[1] + 0.32, y0 + 1.15, y0 + 1.36, 2.96, 3.0, 'black');   // 카드 리더기
+    { const led = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.01), new THREE.MeshBasicMaterial({ color: 0xff3030 })); led.position.set(LECT101[1] + 0.26, y0 + 1.32, 2.955); scene.add(led); }
+    const sg = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.13), new THREE.MeshStandardMaterial({ map: roomSignTex('101', '강의실'), roughness: 0.4 }));
+    sg.position.set(LECT101[0] - 0.45, y0 + 1.75, 2.988); sg.rotation.y = Math.PI; scene.add(sg);
+  }
   if (n > 0) fireCompartment(y0, K);
   if (n === 3) lounge(y0);
   if (n === 2) openSpace(y0);
@@ -3237,7 +3290,7 @@ const floorSignTex = [1, 2, 3, 4].map((f) => labelTex(256, 160, (g, w, h) => {
   g.fillStyle = '#f0f0ea'; g.font = 'bold 110px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(`${f}F`, w / 2, h / 2 + 6);
 }));
-buildStair({ xa: 39.1, xb: HALF, z0: -0.2, s: -1, side: 'xa', back: true, header: true });   // 우측 끝 (강의실쪽)
+buildStair({ xa: 39.1, xb: HALF, z0: -0.2, s: -1, side: 'xa', back: true, header: true, open1F: true });   // 우측 끝 (강의실쪽)
 buildStair({ ...LEFT_STAIR, z0: CW, s: 1, side: 'xb', back: true, signWall: true });                          // 좌측 끝 (홀 왼쪽)
 // 홀 | 계단 사이 벽 (층마다 계단 입구)
 sbox(WEST_HALL.x1, LEFT_STAIR.xa, 0, 3 * FH, CW, WZ1 - 0.2, 'stairWall', true);   // 1~3층: 계단실 서쪽 벽 = 외벽
@@ -3283,9 +3336,19 @@ const ADV = { x0: -HALF, x1: -33.0, z0: WZ1, z1: WZ1 + 10.0 };
   sbox(ADV.x0, ADV.x1, y0, y0 + 0.1, ADV.z1 - 0.035, ADV.z1, 'baseboard');
   // 홀 → 강의실 문 (홀 뒷벽)
   const dcx = WEST_HALL.cx;
-  for (const [a, b, c, d] of [[dcx - 0.5, dcx - 0.45, 0, 2.72], [dcx + 0.45, dcx + 0.5, 0, 2.72], [dcx - 0.5, dcx + 0.5, 2.1, 2.16], [dcx - 0.5, dcx + 0.5, 2.68, 2.72]]) sbox(a, b, y0 + c, y0 + d, ADV.z0 - 0.26, ADV.z0 + 0.03, 'doorFrame');
-  sbox(dcx - 0.45, dcx + 0.45, y0 + 2.16, y0 + 2.68, ADV.z0 - 0.11, ADV.z0 - 0.09, 'glass');
-  navDoorRefs.adv = makeDoor({ cx: dcx, y0, z: ADV.z0 - 0.1, w: 0.9, locked: false, label: '첨단강의실' });
+  for (const [a, b, c, d] of [[dcx - 0.85, dcx - 0.8, 0, 2.72], [dcx + 0.8, dcx + 0.85, 0, 2.72], [dcx - 0.85, dcx + 0.85, 2.1, 2.16], [dcx - 0.85, dcx + 0.85, 2.68, 2.72]]) sbox(a, b, y0 + c, y0 + d, ADV.z0 - 0.26, ADV.z0 + 0.03, 'doorFrame');
+  sbox(dcx - 0.8, dcx + 0.8, y0 + 2.16, y0 + 2.68, ADV.z0 - 0.11, ADV.z0 - 0.09, 'glass');
+  {   // 양쪽 여닫이 문 (같이 열리고 닫힘)
+    const dl = makeDoor({ cx: dcx - 0.4, y0, z: ADV.z0 - 0.1, w: 0.8, locked: false, label: '첨단강의실' });
+    const dr = makeDoor({ cx: dcx + 0.4, y0, z: ADV.z0 - 0.1, w: 0.8, locked: false, label: '첨단강의실' });
+    dr.pivot.position.x = dcx + 0.8;
+    for (const c of dr.pivot.children) c.position.x = -c.position.x;
+    dr.mirror = true; updateDoorCollider(dr);
+    dl.pair = dr; dr.pair = dl;
+    navDoorRefs.adv = dl;
+  }
+  sbox(dcx + 0.95, dcx + 1.07, y0 + 1.15, y0 + 1.36, ADV.z0 - 0.24, ADV.z0 - 0.2, 'black');   // 카드키 장치 (홀 쪽)
+  { const led = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.01), new THREE.MeshBasicMaterial({ color: 0x30ff60 })); led.position.set(dcx + 1.01, y0 + 1.32, ADV.z0 - 0.245); scene.add(led); }
   signPlane(textTex(320, 96, '#3a3d40', '#e8e8e2', [['첨단강의실', 40, 0.5]]), 0.6, 0.18, dcx, y0 + 2.95, ADV.z0 - 0.215, Math.PI);
   // 문 열고 들어가서 정면 벽(북쪽): 화이트보드 + 양옆 대형 TV
   const bx = -39.0;
@@ -3310,7 +3373,7 @@ const ADV = { x0: -HALF, x1: -33.0, z0: WZ1, z1: WZ1 + 10.0 };
     }
   }));
   for (const x of [-42.5, -39.0, -35.5]) for (const z of [12.8, 15.8, 18.8]) sbox(x - 0.3, x + 0.3, RH - 0.015, RH, z - 0.6, z + 0.6, lampKeyFor('adv'));
-  addRoom('adv', { x0: ADV.x0, x1: ADV.x1, z0: ADV.z0, z1: ADV.z1, y0, anchors: [[-42, 13.5], [-42, 18.5], [-36, 13.5], [-36, 18.5]], sw: [dcx - 0.85, y0 + 1.3, ADV.z0 + 0.02, 0] });
+  addRoom('adv', { x0: ADV.x0, x1: ADV.x1, z0: ADV.z0, z1: ADV.z1, y0, anchors: [[-42, 13.5], [-42, 18.5], [-36, 13.5], [-36, 18.5]], sw: [dcx - 1.15, y0 + 1.3, ADV.z0 + 0.02, 0] });
 }
 buildStair({ ...MID_STAIR, z0: CW, s: 1, back: true, signFront: true });                                       // 가운데 (홀 왼쪽)
 
@@ -3342,7 +3405,7 @@ for (const sd of STAIR_DEFS) {
 middleWing();
 
 // ================= 외벽 / 날개 / 지붕 =================
-wallZ(-HALF, WEST_HALL.x1, 3 * FH - 0.3, TOP + 0.2, WZ1 - 0.2, WZ1, [{ a: WEST_HALL.cx - 0.5, b: WEST_HALL.cx + 0.5, c: 3 * FH, d: 3 * FH + 2.72 }], 'stairWall');   // 4층 홀 뒷벽 (강의실 문)
+wallZ(-HALF, WEST_HALL.x1, 3 * FH - 0.3, TOP + 0.2, WZ1 - 0.2, WZ1, [{ a: WEST_HALL.cx - 0.85, b: WEST_HALL.cx + 0.85, c: 3 * FH, d: 3 * FH + 2.72 }], 'stairWall');   // 4층 홀 뒷벽 (강의실 문)
 sbox(-HALF - 0.2, WEST_HALL.x1, 0, 3 * FH - 0.3, WZ1 - 0.2, WZ1, 'stairWall', true);   // 1~3층: 첨단강의실 날개 남쪽 외벽
 sbox(-HALF - 0.2, WEST_HALL.x1, 3 * FH - 0.32, 3 * FH - 0.3, CW, WZ1 - 0.2, 'facade');   // 4층 홀 바닥 밑면
 sbox(40.4, HALF, 0, TOP + 0.2, WZ1 - 0.2, WZ1, 'stairWall', true);
@@ -3432,7 +3495,7 @@ addCol(4.4, 4.6, 3 * FH, 3 * FH + 1.0, CW + 1.6, 10.6);
 wallZ(-4.4, 4.4, 0, TOP + 0.2, HALL.z1, MEN.z0, [{ a: -0.6, b: 0.6, c: 3 * FH, d: 3 * FH + 2.3 }, { a: -0.6, b: 0.6, c: FH, d: FH + 2.3 }, { a: -0.5, b: 0.5, c: 2 * FH, d: 2 * FH + 2.15 }, { a: -3.0, b: 3.0, c: 0, d: 2.8 }], 'stairWall');   // 홀 | 남자화장실 (4·2층) / 3층 학생회실 문
 for (const s of [-1, 1]) {   // 양 끝벽: 1층 출입구, 위층은 복도 끝 창문
   const x0 = s < 0 ? -HALF - 0.2 : HALF, x1 = x0 + 0.2;
-  const holes = [{ a: 0.2, b: 2.2, c: 0, d: 2.5 }];
+  const holes = [s < 0 ? { a: 0.2, b: 2.2, c: 0, d: 2.5 } : { a: EAST_EXIT[0], b: EAST_EXIT[1], c: 0, d: 2.4 }];
   for (let n = 1; n < 4; n++) holes.push(s < 0 ? { a: 0.06, b: 2.94, c: n * FH + 0.15, d: n * FH + CH - 0.08 } : { a: 0.4, b: 2.0, c: n * FH + 1.0, d: n * FH + 2.6 });
   if (s < 0) {
     const n = 3;   // 4층 홀 창문
@@ -3447,7 +3510,8 @@ for (const s of [-1, 1]) {   // 양 끝벽: 1층 출입구, 위층은 복도 끝
     sbox(x0 - 0.02, x1 + 0.02, y0 + 1.75, y0 + 1.8, 0.4, 2.0, 'alu');
     sbox(x0 - 0.02, x1 + 0.02, y0 + 1.0, y0 + 2.6, 1.17, 1.23, 'alu');
   }
-  glassDoors('x', 0.2, 2.2, x0, x1, 2.2, 2.5, s < 0 ? 'west' : 'east');
+  if (s < 0) glassDoors('x', 0.2, 2.2, x0, x1, 2.2, 2.5, 'west');
+  else glassDoors('x', EAST_EXIT[0], EAST_EXIT[1], x0, x1, 2.1, 2.4, 'east');
 }
 // 뒤쪽 외벽 (로비 출입구 / 405호 / 컴퓨터실 / 설계지원실 / 과사무실 / 빈 공간 창문)
 const winX0 = 6.8, winX1 = 13.0, winY0 = 12.85, winY1 = 14.95;   // 404-2호 창문
@@ -3473,7 +3537,7 @@ sbox(11.9, 12.1, 0, FH, -CD, 0, 'paint', true);
 wallZ(-11.9, 11.9, 0, CH, -CD, -CD + 0.02, [{ a: -3, b: 3, c: 0, d: 2.8 }], 'paint', false);
 glassDoors('z', -3, 3, -CD - 0.2, -CD, 2.4, 2.8, 'lobby');   // 출입구
 makeShutter(-3, 3, -CD + 0.08, 2.8, 'z', 'lobby');
-makeShutter(0.2, 2.2, HALF - 0.08, 2.5, 'x', 'east');
+makeShutter(EAST_EXIT[0], EAST_EXIT[1], HALF - 0.08, 2.4, 'x', 'east');
 // 엘베 쪽(서쪽) 출입구: 셔터 없는 유리문 — 여는 버튼이 고장
 sbox(-HALF, -HALF + 0.04, 0.95, 1.35, 2.33, 2.57, 'steelGrey');
 {
@@ -4366,7 +4430,7 @@ function promptFor(it) {
   if (it.type === 'drawer') return it.opened ? '' : '[클릭] 서랍 열기';
   if (it.type === 'brokenBtn') return '[클릭] 개폐 버튼 누르기';
   if (it.type === 'culprit') return canStrike() ? '[클릭] 소주병으로 뒤통수 내려치기' : culprit.g.visible && hasItem('specimen') && ai.active && !['ko', 'qte', 'stun'].includes(ai.state) ? '[클릭] 공시체로 내려치기' : '';
-  if (it.type === 'exhibit') return '[클릭] 문 열기';
+  if (it.type === 'exhibit' || it.type === 'lockedRoom') return '[클릭] 문 열기';
   if (it.type === 'elevator') return '[클릭] 호출 버튼 누르기';
   return '';
 }
@@ -4518,6 +4582,9 @@ function interact() {
   } else if (it.type === 'exhibit') {
     rattleSound();
     showMsg('전시실 — 잠겨 있다.');
+  } else if (it.type === 'lockedRoom') {
+    rattleSound(); if (it.card) beep(300, 0.3);
+    showMsg(`${it.label} — 잠겨 있다.${it.card ? ' 카드키가 필요하다.' : ''}`);
   } else if (it.type === 'drawer') {
     if (it.opened) { showMsg('서랍은 이미 열려 있다.'); return; }
     openDrawer(it);
@@ -5443,6 +5510,7 @@ for (let n = 0; n < 4; n++) {
   for (let i = 0; i < 44; i++) {
     const x0 = -44 + i * 2;
     if (n === 0 && x0 < 9.7 && x0 + 2 > 9.7) continue;   // 1층 전시실 벽
+    if (n === 0 && x0 < EXHIBIT_BACK_X && x0 + 2 > EXHIBIT_BACK_X) continue;   // 1층 오른쪽 계단 앞 막다른 벽
     NL(corr[n][i], corr[n][i + 1]);
   }
 }
@@ -5741,8 +5809,17 @@ function noticeDoor(d) {
     culpritVoice('hmm');
   }
 }
+let navReach = null;
+function reachable(id) {   // 3층 가운데 복도에서 걸어서 갈 수 있는 노드인지
+  if (!navReach) {
+    navReach = new Set([corr[2][22]]);
+    const q = [corr[2][22]];
+    while (q.length) for (const e of nav.adj[q.pop()]) if (!navReach.has(e.to)) { navReach.add(e.to); q.push(e.to); }
+  }
+  return navReach.has(id);
+}
 function startRoaming(far = false) {
-  if (!PATROL_NODES.length) { for (const row of corr) for (const id of row) PATROL_NODES.push(nav.nodes[id]); for (const h of hallN) PATROL_NODES.push(nav.nodes[h]); }
+  if (!PATROL_NODES.length) { for (const row of corr) for (const id of row) if (reachable(id)) PATROL_NODES.push(nav.nodes[id]); for (const h of hallN) PATROL_NODES.push(nav.nodes[h]); }
   ai.active = true;
   ai.state = 'patrol';
   ai.path = null; ai.waitT = 4;
@@ -5751,6 +5828,7 @@ function startRoaming(far = false) {
   if (far) {   // 이어하기: 플레이어에게서 가장 먼 복도에서 시작
     let best = null, bd = -1;
     for (const row of corr) for (const id of row) {
+      if (!reachable(id)) continue;
       const n = nav.nodes[id], sc = Math.hypot(n.x - player.x, n.z - player.z) + 18 * Math.abs(n.y - player.feet);
       if (sc > bd) { bd = sc; best = n; }
     }
