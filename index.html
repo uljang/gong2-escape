@@ -307,7 +307,9 @@
       <button class="mbtn start" id="btnStart">게임 시작</button>
       <button class="mbtn" id="btnExplore">탐방 모드</button>
       <div class="mnote" id="exploreNote">범인·스토리 없이 학교를 자유롭게 둘러봅니다</div>
+      <button class="mbtn" id="btnResume" style="display:none">이어하기 (마지막 저장 지점)</button>
       <button class="mbtn" id="btnSettings">조작법 및 설정</button>
+      <button class="mbtn" id="btnToTitle" style="display:none">시작 화면으로</button>
     </div>
     <div id="modelNote" style="margin-top:18px;font-size:12px;color:#8d6a5a;display:none"></div>
   </div>
@@ -947,6 +949,9 @@ const MEN = { x0: -4.4, x1: 4.4, z0: 6.8, z1: WZM - 0.2 };
 const DESIGN_DOOR = 44.2;
 const ELEV_X = -42;
 const COMPUTER_ROOM = 3, DSR_ROOM = 2, OFFICE_ROOM = 3, LAB_ROOM = 3;
+const DSR_EXT = 1.4;   // 설계지원실을 408호 쪽으로 넓힌 폭
+const DSR_ROW_A = roomX0(DSR_ROOM) + 1.95, DSR_ROW_B = roomX0(DSR_ROOM) + 4.75;   // 가운데 책상 두 줄 (408호 쪽으로 당겨 칠판 앞을 넓게)
+const doorOffs = (n, r) => (n === 3 && r === 1 ? [1.2, 6.4] : [1.2, 7.8]);   // 408호 뒷문은 넓힌 벽을 피해 안쪽으로
 const doorNoteTex = labelTex(240, 320, (g, W, H) => {   // "문 살살닫기" 종이
   g.fillStyle = '#fbfbf6'; g.fillRect(0, 0, W, H);
   g.fillStyle = 'rgba(230,220,120,0.7)'; g.fillRect(W / 2 - 40, 0, 80, 18);   // 테이프
@@ -959,6 +964,100 @@ const FLOOR2_TITLES = ['콘크리트 구조시스템 연구실', '인공지능 �
 const hasClere = (n, r) => n === 1 || (n === 2 && r !== OFFICE_ROOM && r !== 7) || (n === 3 && r === DSR_ROOM);   // 앞문-뒷문 사이 높은 창
 const roomNumber = (n, r) => (n === 1 ? `20${8 - r}` : `${n + 1}0${9 - r}`);   // 2층은 동쪽 끝이 201호          // 호수: 반대쪽부터
 
+// 1층 복도 (가장 왼쪽 출입구 쪽부터): 안은 없고 문만 있는 방
+const F1_ROOMS = [
+  { r: 0, no: '104', title: '이것저것 연구실' },
+  { r: 1, no: '103', title: '국내주식 연구실' },
+  { r: 2, no: '102', title: '토목공학과 컴퓨터실', glass: true },
+];
+const f1DoorXs = (rm) => (rm.glass ? [roomX0(rm.r) + 6.2] : [roomX0(rm.r) + 1.2, roomX0(rm.r) + 7.8]);
+function roomSignTex(no, title) {
+  return labelTex(256, 112, (g, w) => {
+    g.fillStyle = '#3a3d40'; g.fillRect(0, 0, w, 112);
+    g.fillStyle = '#e8e8e2'; g.font = 'bold 44px sans-serif'; g.textAlign = 'center'; g.fillText(no, w / 2, 50);
+    let fs = 30; g.font = `${fs}px "Malgun Gothic", sans-serif`;
+    while (g.measureText(title).width > w - 12 && fs > 14) { fs -= 2; g.font = `${fs}px "Malgun Gothic", sans-serif`; }
+    g.fillText(title, w / 2, 92);
+  });
+}
+function floor1Rooms(y0, K) {
+  for (const rm of F1_ROOMS) {
+    const rx = roomX0(rm.r), label = `${rm.no}호 ${rm.title}`;
+    for (const cx of f1DoorXs(rm)) {
+      if (rm.glass) {   // 카드키로 잠긴 유리 양문 — 안쪽은 불 꺼진 컴퓨터실이라 캄캄함
+        sbox(cx - 1.06, cx - 1.0, y0, y0 + 2.46, -0.24, 0.03, 'darkMetal');
+        sbox(cx + 1.0, cx + 1.06, y0, y0 + 2.46, -0.24, 0.03, 'darkMetal');
+        sbox(cx - 1.06, cx + 1.06, y0 + 2.4, y0 + 2.46, -0.24, 0.03, 'darkMetal');
+        sbox(cx - 1.2, cx + 1.2, y0, y0 + 2.6, -0.75, -0.21, 'black');   // 유리 너머 어둠
+        const dl = makeDoor({ cx: cx - 0.5, y0, z: -0.06, w: 1.0, h: 2.38, locked: true, lockType: 'card', cardId: 'civilKey', glass: true, label });
+        const dr = makeDoor({ cx: cx + 0.5, y0, z: -0.06, w: 1.0, h: 2.38, locked: true, lockType: 'card', cardId: 'civilKey', glass: true, label });
+        dr.pivot.position.x = cx + 1.0;
+        for (const c of dr.pivot.children) c.position.x = -c.position.x;
+        dr.mirror = true; updateDoorCollider(dr);
+        dl.pair = dr; dr.pair = dl;
+        sbox(cx + 1.14, cx + 1.26, y0 + 1.15, y0 + 1.36, 0, 0.04, 'black');   // 카드 리더기
+        { const led = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.01), new THREE.MeshBasicMaterial({ color: 0xff3030 })); led.position.set(cx + 1.2, y0 + 1.32, 0.045); scene.add(led); }
+        continue;
+      }
+      sbox(cx - 0.5, cx - 0.45, y0, y0 + 2.72, -0.24, 0.03, K('doorFrame'));
+      sbox(cx + 0.45, cx + 0.5, y0, y0 + 2.72, -0.24, 0.03, K('doorFrame'));
+      sbox(cx - 0.5, cx + 0.5, y0 + 2.1, y0 + 2.16, -0.24, 0.03, K('doorFrame'));
+      sbox(cx - 0.5, cx + 0.5, y0 + 2.68, y0 + 2.72, -0.24, 0.03, K('doorFrame'));
+      sbox(cx - 0.45, cx + 0.45, y0 + 2.16, y0 + 2.68, -0.11, -0.09, 'glassDark');
+      sbox(cx + 0.56, cx + 0.66, y0 + 1.15, y0 + 1.36, 0, 0.04, 'black');   // 도어락
+      sbox(cx - 0.45, cx + 0.45, y0, y0 + 2.7, -0.75, -0.21, 'black');     // 문 위 창 너머 어둠
+      makeDoor({ cx, y0, z: -0.06, w: 0.9, locked: true, label });
+    }
+    const sx = rm.glass ? f1DoorXs(rm)[0] - 1.45 : rx + 0.4;
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.13), new THREE.MeshStandardMaterial({ map: roomSignTex(rm.no, rm.title), roughness: 0.4 }));
+    sign.position.set(sx, y0 + 1.75, 0.012); scene.add(sign);
+  }
+}
+// 2~4층 우측 끝: 설계실·계단 앞 방화구획 벽 + 양쪽으로 활짝 열어 고정해 둔 방화문 (상호작용 없음)
+const FIRE_X0 = 39.1, FIRE_PILLAR = 40.85;   // 방화구획 벽 위치 / 옮긴 창가 기둥 중심
+function steelLocker(x0, x1, y0) {   // 철제 사물함: 2단 × 5칸, 칸마다 문·환기구·손잡이·번호표
+  if (!M.lockerSteel) M.lockerSteel = std({ color: 0x8e959b, roughness: 0.45, metalness: 0.45 });
+  if (!M.lockerDoor) M.lockerDoor = std({ color: 0xa3aab0, roughness: 0.4, metalness: 0.4 });
+  const z0 = 2.5, z1 = 2.98, H = 1.8, cols = 5, cw = (x1 - x0) / cols, rh = (H - 0.06) / 2;
+  sbox(x0, x1, y0, y0 + 0.06, z0 + 0.03, z1, 'darkMetal');           // 받침
+  sbox(x0, x1, y0 + 0.06, y0 + H, z0 + 0.01, z1, 'lockerSteel', true);   // 몸통
+  for (let c = 0; c < cols; c++) for (let r = 0; r < 2; r++) {
+    const a = x0 + c * cw + 0.012, b = a + cw - 0.024, yb = y0 + 0.06 + r * rh + 0.012, yt = yb + rh - 0.024;
+    sbox(a, b, yb, yt, z0 - 0.004, z0 + 0.01, 'lockerDoor');
+    for (let i = 0; i < 4; i++) sbox(a + 0.08, b - 0.08, yt - 0.12 - i * 0.03, yt - 0.11 - i * 0.03, z0 - 0.006, z0 - 0.004, 'black');   // 환기구
+    sbox(b - 0.07, b - 0.04, yb + rh * 0.42, yb + rh * 0.42 + 0.1, z0 - 0.02, z0 - 0.004, 'alu');   // 손잡이
+    sbox(a + 0.04, a + 0.12, yt - 0.05, yt - 0.02, z0 - 0.006, z0 - 0.004, 'paper');                 // 번호표
+  }
+}
+function fireCompartment(y0, K) {
+  const x0 = FIRE_X0, x1 = FIRE_X0 + 0.2, za = 0.35, zb = 2.65, H = 2.3, LW = (zb - za) / 2;
+  wallX(0, 3.0, y0, y0 + CH, x0, x1, [{ a: za, b: zb, c: y0, d: y0 + H }], K('paint'));
+  sbox(x0 - 0.02, x1 + 0.02, y0, y0 + H + 0.06, za - 0.06, za, 'darkMetal');   // 문틀
+  sbox(x0 - 0.02, x1 + 0.02, y0, y0 + H + 0.06, zb, zb + 0.06, 'darkMetal');
+  sbox(x0 - 0.02, x1 + 0.02, y0 + H, y0 + H + 0.06, za, zb, 'darkMetal');
+  for (const [z, s] of [[za + 0.035, 1], [zb - 0.035, -1]]) {   // 문짝: 설계실 쪽으로 90도 열려 벽 쪽에 붙어 있음
+    const g = new THREE.Group();
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(LW, H - 0.03, 0.05), fireDoorMat);
+    leaf.position.set(LW / 2, (H - 0.03) / 2 + 0.01, 0); leaf.castShadow = leaf.receiveShadow = true;
+    const win = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.5, 0.052), M.glassDark);
+    win.position.set(LW * 0.7, 1.55, 0);
+    g.add(leaf, win);
+    for (const side of [-1, 1]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(LW * 0.7, 0.05, 0.04), M.alu); bar.position.set(LW * 0.55, 1.0, side * 0.05); g.add(bar); }
+    const closer = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.06), M.darkMetal);   // 도어 클로저
+    closer.position.set(0.25, H - 0.08, s * 0.06); g.add(closer);
+    g.position.set(x1 + 0.01, y0, z);
+    scene.add(g);
+    addCol(x1, x1 + LW + 0.02, y0, y0 + H, z - 0.03, z + 0.03);
+  }
+  const ft = labelTex(256, 64, (g, w, h) => {   // 문 위 표지
+    g.fillStyle = '#2b2b2b'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#f0f0ea'; g.font = 'bold 34px "Malgun Gothic", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('방 화 문', w / 2, h / 2 + 2);
+  });
+  for (const [x, ry] of [[x0 - 0.006, -Math.PI / 2], [x1 + 0.006, Math.PI / 2]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.125), new THREE.MeshStandardMaterial({ map: ft, roughness: 0.5 }));
+    m.position.set(x, y0 + H + 0.32, (za + zb) / 2); m.rotation.y = ry; scene.add(m);
+  }
+}
 function bayType(k, n) {
   if (k === 0) return n === 3 ? 'stair' : n === 0 ? 'blank' : 'xwin';   // 4층: 홀 방화문 / 2·3층: 엘베 맞은편 X가새 창 / 1층: 벽
   if (k === 1) return n === 3 ? 'blank' : 'stair';                         // 1~3층: 계단실 문
@@ -1521,8 +1620,8 @@ function office() {
 }
 
 // ---------- 4층 강의실 내부 껍데기 (rx ~ rx+9) ----------
-function roomShell(rx, y0, { floor, inner = 'paint', blinds, blindKey = 'blind', lampKey = 'panelOff', clere = false }) {
-  const X0 = rx + 0.1, X1 = rx + 8.9, Z0 = -CD, Z1 = -0.2, RH = y0 + CH;
+function roomShell(rx, y0, { floor, inner = 'paint', blinds, blindKey = 'blind', lampKey = 'panelOff', clere = false, ext = 0 }) {
+  const X0 = rx + 0.1 - ext, X1 = rx + 8.9, Z0 = -CD, Z1 = -0.2, RH = y0 + CH;
   sbox(X0, X1, y0 - 0.3, y0, Z0, Z1, floor);
   flat(X0, X1, Z0, Z1, y0);
   sbox(X0, X1, RH, RH + 0.02, Z0, Z1, 'ceiling');
@@ -1610,9 +1709,9 @@ const hideSpots = [];
 const swingers = [];   // 냉장고 문 등 여닫이
 function designSupportRoom() {
   const rx = roomX0(DSR_ROOM), y0 = 3 * FH;
-  const { X0, X1, Z0 } = roomShell(rx, y0, { floor: 'corFloor', inner: 'teal', blinds: [y0 + 1.55, y0 + 1.7, y0 + 1.5], blindKey: 'zebra', lampKey: lampKeyFor('dsr'), clere: true });
+  const { X0, X1, Z0 } = roomShell(rx, y0, { floor: 'corFloor', inner: 'teal', blinds: [y0 + 1.55, y0 + 1.7, y0 + 1.5], blindKey: 'zebra', lampKey: lampKeyFor('dsr'), clere: true, ext: DSR_EXT });
   addRoom('dsr', { x0: X0, x1: X1, z0: -CD, z1: -0.2, y0, anchors: [[rx + 2.6, -2.9], [rx + 2.6, -7.2], [rx + 6.4, -2.9], [rx + 6.4, -7.2]], sw: [rx + 7.0, y0 + 1.3, -0.225, Math.PI] });
-  sbox(rx - 0.1, rx + 0.1, y0, y0 + FH, -CD, 0, 'paint', true);   // 왼쪽 강의실과의 벽
+  sbox(X0 - 0.2, X0, y0, y0 + FH, -CD, 0, 'paint', true);   // 408호와의 벽 (408호 쪽으로 넓힘)
   sbox(rx + 8.9, rx + 9.1, y0, y0 + FH, -CD, 0, 'paint', true);   // 컴퓨터실과의 벽
   signPlane(exitTex, 0.4, 0.16, rx + 7.8, y0 + 2.85, -0.225, Math.PI, true);   // 문 위 비상구 표시
 
@@ -1626,16 +1725,16 @@ function designSupportRoom() {
     addCol(x0, x1, y0, y0 + 0.75, z0, z1);
   };
   // 파티션 책상. side = 파티션(앞판)이 있는 쪽. 모든 책상 밑에 숨을 수 있음
-  const studyDesk = (x0, x1, z0, z1, side) => {
-    const P = 0.03, PH = 1.25;
+  const studyDesk = (x0, x1, z0, z1, side, win = false) => {
+    const P = 0.03, PH = 1.25, BH = win ? 0.78 : PH;
     sbox(x0, x1, y0 + 0.72, y0 + 0.75, z0, z1, 'woodTable', true);
     const back = {
       '-z': [x0, x1, z0 - P, z0 + P], '+z': [x0, x1, z1 - P, z1 + P],
       '-x': [x0 - P, x0 + P, z0, z1], '+x': [x1 - P, x1 + P, z0, z1],
     }[side];
-    sbox(back[0], back[1], y0, y0 + PH, back[2], back[3], 'partitionLight', true);
+    sbox(back[0], back[1], y0, y0 + BH, back[2], back[3], 'partitionLight', true);
     sbox(back[0] - 0.005, back[1] + 0.005, y0 + 0.45, y0 + 0.72, back[2] - 0.005, back[3] + 0.005, 'partition');
-    sbox(back[0] - 0.01, back[1] + 0.01, y0 + PH - 0.03, y0 + PH + 0.02, back[2] - 0.01, back[3] + 0.01, 'steelGrey');
+    if (!win) sbox(back[0] - 0.01, back[1] + 0.01, y0 + PH - 0.03, y0 + PH + 0.02, back[2] - 0.01, back[3] + 0.01, 'steelGrey');
     if (side === '-z' || side === '+z') for (const x of [x0, x1]) sbox(x - P, x + P, y0, y0 + PH, z0, z1, 'partitionLight', true);
     else for (const z of [z0, z1]) sbox(x0, x1, y0, y0 + PH, z - P, z + P, 'partitionLight', true);
     const dir = { '-z': [0, 1], '+z': [0, -1], '-x': [1, 0], '+x': [-1, 0] }[side];   // 앉는 쪽 방향
@@ -1657,13 +1756,13 @@ function designSupportRoom() {
   // 칠판 쪽 안쪽의 큰 테이블 (2개 붙임) + 의자 (의자는 충돌 없이 테이블 쪽에 붙여서 길을 막지 않음)
   table(X1 - 2.3, X1 - 0.5, -7.8, -6.9);
   table(X1 - 2.3, X1 - 0.5, -6.9, -6.0);
-  for (const [x, z, ry] of [[X1 - 1.7, -8.15, Math.PI / 2], [X1 - 1.0, -5.65, -Math.PI / 2 + 0.2]]) prop(x, y0, z, ry, redChair, false);
+  for (const [x, z, ry] of [[X1 - 1.85, -5.7, -Math.PI / 2 - 0.15], [X1 - 1.0, -5.65, -Math.PI / 2 + 0.2]]) prop(x, y0, z, ry, redChair, false);   // 창가 책상 의자와 안 겹치게 둘 다 복도 쪽
 
-  // 독서실형 마주보는 책상 2줄 (문 쪽 벽과 수직, 한 줄에 6개 = 3 + 3) — 창가 쪽, 창 벽과는 여유 있게
-  const rowDesks = [];
-  for (const xc of [rx + 2.3, rx + 5.1]) {
+  // 독서실형 마주보는 책상 2줄 (문 쪽 벽과 수직, 한 줄에 6개 = 3 + 3) — 창가 책상 의자 자리부터 복도 쪽까지 길게
+  const rowDesks = [], CELL = 1.55, RZ0 = -7.95;
+  for (const xc of [DSR_ROW_A, DSR_ROW_B]) {
     for (let i = 0; i < 3; i++) {
-      const z0 = -8.3 + i * 1.1, z1 = z0 + 1.1;
+      const z0 = RZ0 + i * CELL, z1 = z0 + CELL;
       studyDesk(xc, xc + 0.7, z0, z1, '-x');   // 동쪽 칸: 서쪽(-x)을 바라봄
       studyDesk(xc - 0.7, xc, z0, z1, '+x');   // 서쪽 칸: 동쪽(+x)을 바라봄
       rowDesks.push({ x0: xc, x1: xc + 0.7, z0, z1 }, { x0: xc - 0.7, x1: xc, z0, z1 });
@@ -1672,11 +1771,195 @@ function designSupportRoom() {
       prop(xc - 0.84, y0, (z0 + z1) / 2 + (Math.random() - 0.5) * 0.15, Math.PI + (Math.random() - 0.5) * 0.3, redChair, false);
     }
   }
-  // 뒷문 쪽 옆벽: 벽에 붙은 책상 4개 (창가 쪽으로)
-  for (let i = 0; i < 4; i++) studyDesk(X0, X0 + 0.75, -8.3 + i * 1.2, -7.1 + i * 1.2, '-x');
-  // 정면 창가: 붙어 있는 책상 2개
-  for (const [x0, x1] of [[rx + 5.0, rx + 6.6], [rx + 6.6, rx + 8.2]]) studyDesk(x0, x1, Z0 + 0.05, Z0 + 0.85, '-z');
-  prop(rx + 5.6, y0, Z0 + 1.1, -Math.PI / 2 + 0.3, redChair, false);
+  // 뒷문 쪽 옆벽(408호 쪽으로 넓힘): 벽에 붙은 책상 5개 + 의자
+  for (let i = 0; i < 5; i++) {
+    const z0 = -8.5 + i * 1.45, z1 = z0 + 1.45;
+    studyDesk(X0, X0 + 0.75, z0, z1, '-x');
+    prop(X0 + 0.89, y0, (z0 + z1) / 2 + (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.3, redChair, false);
+  }
+  // 정면 창가: 칠판 쪽 벽에 붙은 책상 2개 — 돌 창턱 바로 앞에 (다른 칸막이 책상과 같은 모양)
+  const WZ0 = Z0 + 0.31, WX0 = X1 - 0.03 - 3.2;
+  for (const [x0, x1] of [[WX0, WX0 + 1.6], [WX0 + 1.6, WX0 + 3.2]]) {
+    studyDesk(x0, x1, WZ0, WZ0 + 0.8, '-z');
+    prop(x0 + 0.8 + (Math.random() - 0.5) * 0.2, y0, WZ0 + 1.08, -Math.PI / 2 + (Math.random() - 0.5) * 0.4, redChair, false);
+  }
+  // 벽 쪽 줄의 복도 끝에 직각으로 붙은 책상 하나 (의자 없음) + 모텔용 1도어 소형 회색 냉장고 (열어볼 수 있음)
+  {
+    const x0 = DSR_ROW_A - 0.7, x1 = DSR_ROW_A + 0.7, z0 = RZ0 + 3 * CELL + 0.03, cx = (x0 + x1) / 2, cz = z0 + 0.36;
+    studyDesk(x0, x1, z0, z0 + 0.7, '-z');
+    if (!M.miniFridge) M.miniFridge = std({ color: 0x6e7277, roughness: 0.5, metalness: 0.2 });
+    if (!M.fridgeIn) M.fridgeIn = std({ color: 0xf4f6f6, roughness: 0.6, emissive: 0xeef4ff, emissiveIntensity: 0 });
+    const yb = y0 + 0.75, W = 0.44, D = 0.46, H = 0.5, zf = cz + D / 2 - 0.03, k = 'miniFridge';
+    sbox(cx - W / 2, cx + W / 2, yb + 0.02, yb + H, cz - D / 2, cz - D / 2 + 0.02, k);          // 뒤판
+    sbox(cx - W / 2, cx - W / 2 + 0.02, yb + 0.02, yb + H, cz - D / 2, zf, k);                  // 옆판
+    sbox(cx + W / 2 - 0.02, cx + W / 2, yb + 0.02, yb + H, cz - D / 2, zf, k);
+    sbox(cx - W / 2, cx + W / 2, yb + H - 0.02, yb + H, cz - D / 2, zf, k);                     // 윗판
+    sbox(cx - W / 2, cx + W / 2, yb + 0.02, yb + 0.045, cz - D / 2, zf, k);                     // 바닥
+    sbox(cx - W / 2 + 0.02, cx + W / 2 - 0.02, yb + 0.045, yb + H - 0.02, cz - D / 2 + 0.02, cz - D / 2 + 0.024, 'fridgeIn');   // 안쪽 (열면 불 켜짐)
+    sbox(cx - W / 2 + 0.03, cx + W / 2 - 0.03, yb + 0.25, yb + 0.258, cz - D / 2 + 0.03, zf - 0.02, 'glass');                   // 선반
+    sbox(cx - 0.16, cx + 0.16, yb + 0.06, yb + 0.42, cz - D / 2 - 0.012, cz - D / 2, 'black');                                 // 뒤 방열판
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) sbox(cx + sx * (W / 2 - 0.06) - 0.02, cx + sx * (W / 2 - 0.06) + 0.02, yb, yb + 0.02, cz + sz * (D / 2 - 0.06) - 0.02, cz + sz * (D / 2 - 0.06) + 0.02, 'black');   // 발
+    // 안에 든 것: 캔음료, 생수, 에너지드링크
+    const cols = [0xc82828, 0x2a62c8, 0xe0b020];
+    for (let i = 0; i < 3; i++) {
+      const ck = 'fcan' + i; if (!M[ck]) M[ck] = std({ color: cols[i], roughness: 0.3, metalness: 0.6 });
+      const g = new THREE.CylinderGeometry(0.033, 0.033, 0.12, 10); g.translate(cx - 0.12 + i * 0.09, yb + 0.318, cz - 0.05 + (i % 2) * 0.08); addGeo(g, ck);
+    }
+    { const g = new THREE.CylinderGeometry(0.035, 0.035, 0.19, 10); g.translate(cx + 0.12, yb + 0.14, cz - 0.08); addGeo(g, 'glass'); }
+    { const g = new THREE.CylinderGeometry(0.03, 0.03, 0.15, 10); g.translate(cx - 0.08, yb + 0.12, cz + 0.02); addGeo(g, 'fcan1'); }
+    addCol(cx - W / 2, cx + W / 2, yb, yb + H, cz - D / 2, cz + D / 2);
+    // 문: 왼쪽 경첩, 바깥(복도 쪽)으로 열림
+    const pivot = new THREE.Group();
+    pivot.position.set(cx - W / 2, yb, zf);
+    const doorM = new THREE.Mesh(new THREE.BoxGeometry(W, H - 0.025, 0.03), M[k]);
+    doorM.position.set(W / 2, (H - 0.025) / 2 + 0.02, 0.015); doorM.castShadow = true;
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.22, 0.022), M.darkMetal);
+    handle.position.set(W - 0.05, 0.31, 0.041);
+    const logo = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.003), M.alu);
+    logo.position.set(W / 2, H - 0.06, 0.032);
+    pivot.add(doorM, handle, logo);
+    scene.add(pivot);
+    const fridge = { pivot, open: false, angle: 0, target: 0, seen: false, openAng: -1.9, msg: '음료수랑 생수, 에너지드링크가 들어 있다.' };
+    swingers.push(fridge);
+    const it = { type: 'fridge', fridge };
+    doorM.userData.it = it; interactables.push(doorM);
+    addProxy(cx - W / 2, cx + W / 2, yb + 0.02, yb + H, zf, zf + 0.05, it);
+  }
+  // 칠판 앞 공용 테이블과 창가 책상 사이: 벽 콘센트 → 테이블 위 4구 멀티탭 (노트북 충전기 꽂힘, 빨간 스위치 불)
+  {
+    const oz = -8.5, oy = y0 + 0.3, wx = X1;
+    sbox(wx - 0.012, wx, oy - 0.06, oy + 0.06, oz - 0.045, oz + 0.045, 'deskWhite');   // 콘센트 판
+    sbox(wx - 0.045, wx - 0.012, oy - 0.025, oy + 0.025, oz - 0.025, oz + 0.025, 'deskWhite');   // 꽂힌 플러그
+    const tx = wx - 0.88, tz = -7.6, ty = y0 + 0.75;   // 멀티탭 (테이블 창가 쪽 모서리)
+    const cable = (pts, r = 0.006, key = 'deskWhite') => {
+      const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)), false, 'centripetal'), 48, r, 6, false);
+      addGeo(g, key, false);
+    };
+    cable([[wx - 0.045, oy, oz], [wx - 0.07, oy - 0.1, oz + 0.02], [wx - 0.1, y0 + 0.05, oz + 0.06], [wx - 0.16, y0 + 0.012, oz + 0.14], [wx - 0.3, y0 + 0.012, -8.1], [wx - 0.4, y0 + 0.012, -7.9], [wx - 0.43, y0 + 0.08, -7.85],
+      [wx - 0.44, y0 + 0.3, -7.84], [wx - 0.45, ty + 0.01, -7.83], [wx - 0.56, ty + 0.012, -7.7], [tx + 0.19, ty + 0.012, tz]]);
+    sbox(tx - 0.17, tx + 0.17, ty, ty + 0.04, tz - 0.032, tz + 0.032, 'deskWhite');   // 몸통
+    for (let i = 0; i < 4; i++) {   // 구멍 4개
+      const g = new THREE.CylinderGeometry(0.017, 0.017, 0.002, 12); g.translate(tx - 0.07 + i * 0.065, ty + 0.0405, tz); addGeo(g, 'black');
+    }
+    const glowM = new THREE.MeshBasicMaterial({ color: 0xff2a1a, toneMapped: false });
+    const sw = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.012, 0.03), glowM);   // 빨간 스위치 (불 꺼져도 빛남)
+    sw.position.set(tx - 0.14, ty + 0.046, tz); scene.add(sw);
+    const glowTex = labelTex(64, 64, (g, w, h) => {
+      const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+      gr.addColorStop(0, 'rgba(255,60,40,0.9)'); gr.addColorStop(0.35, 'rgba(255,30,20,0.35)'); gr.addColorStop(1, 'rgba(255,0,0,0)');
+      g.clearRect(0, 0, w, h); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    });
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false }));
+    glow.scale.setScalar(0.09); glow.position.set(tx - 0.14, ty + 0.055, tz); scene.add(glow);
+    // 노트북 충전기: 두 번째 구멍에 꽂힌 플러그 → 어댑터 → 선 끝
+    const px = tx - 0.07 + 0.065;
+    sbox(px - 0.016, px + 0.016, ty + 0.04, ty + 0.072, tz - 0.018, tz + 0.018, 'black');
+    sbox(tx - 0.42, tx - 0.31, ty, ty + 0.032, tz + 0.12, tz + 0.18, 'black');   // 어댑터
+    cable([[px, ty + 0.07, tz + 0.005], [px - 0.03, ty + 0.05, tz + 0.08], [tx - 0.2, ty + 0.012, tz + 0.15], [tx - 0.31, ty + 0.016, tz + 0.15]], 0.004, 'black');
+    cable([[tx - 0.42, ty + 0.016, tz + 0.15], [tx - 0.55, ty + 0.008, tz + 0.2], [tx - 0.6, ty + 0.006, tz + 0.36], [tx - 0.5, ty + 0.006, tz + 0.48], [tx - 0.42, ty + 0.006, tz + 0.5]], 0.003, 'black');
+    sbox(tx - 0.42, tx - 0.39, ty, ty + 0.012, tz + 0.495, tz + 0.505, 'alu');   // 충전 단자
+  }
+  // 구석(창가 · 408호 쪽 벽): 전선을 기둥에 감아 둔 하얀 선풍기
+  {
+    if (!M.fanWhite) M.fanWhite = std({ color: 0xeeeee8, roughness: 0.45 });
+    const g = new THREE.Group(), fx = X0 + 0.45, fz = Z0 + 0.75;
+    const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; g.add(m); return m; };
+    add(new THREE.CylinderGeometry(0.17, 0.18, 0.04, 24), M.fanWhite, 0, 0.02, 0);                 // 받침
+    add(new THREE.CylinderGeometry(0.022, 0.022, 0.98, 10), M.fanWhite, 0, 0.53, 0);               // 기둥
+    add(new THREE.CylinderGeometry(0.03, 0.03, 0.08, 10), M.fanWhite, 0, 1.03, 0);
+    add(new THREE.CylinderGeometry(0.075, 0.07, 0.16, 16), M.fanWhite, 0, 1.08, -0.02, Math.PI / 2);   // 모터
+    for (const z of [0.07, 0.17]) add(new THREE.TorusGeometry(0.22, 0.006, 6, 40), M.fanWhite, 0, 1.08, z);   // 망 테두리
+    for (let i = 0; i < 12; i++) {   // 앞망 살
+      const a = (i / 12) * Math.PI * 2;
+      add(new THREE.BoxGeometry(0.004, 0.22, 0.004), M.fanWhite, Math.sin(a) * 0.11, 1.08 + Math.cos(a) * 0.11, 0.17, 0, 0, -a);
+    }
+    add(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 16), M.fanWhite, 0, 1.08, 0.175, Math.PI / 2);   // 가운데 캡
+    const bladeM = std({ color: 0xd8e6ee, roughness: 0.3, transparent: true, opacity: 0.85 });
+    for (let i = 0; i < 3; i++) {   // 날개 3장
+      const a = (i / 3) * Math.PI * 2;
+      add(new THREE.BoxGeometry(0.085, 0.17, 0.006), bladeM, Math.sin(a) * 0.1, 1.08 + Math.cos(a) * 0.1, 0.12, 0, 0.3, -a);
+    }
+    add(new THREE.BoxGeometry(0.05, 0.07, 0.02), M.fanWhite, 0.06, 0.06, 0.1, -0.3);   // 버튼 부분
+    const cordM = std({ color: 0xf2f2ee, roughness: 0.6 });
+    for (let i = 0; i < 5; i++) add(new THREE.TorusGeometry(0.03, 0.006, 6, 16), cordM, 0, 0.26 + i * 0.022, 0, Math.PI / 2 + (i % 2) * 0.12);   // 기둥에 감은 전선
+    add(new THREE.BoxGeometry(0.035, 0.05, 0.02), cordM, 0.04, 0.2, 0.03, 0, 0.4);   // 끝에 매달린 플러그
+    g.position.set(fx, y0, fz); g.rotation.y = Math.atan2(0.75, 0.65);   // 방 안쪽을 보게
+    scene.add(g);
+    addCol(fx - 0.18, fx + 0.18, y0, y0 + 1.3, fz - 0.18, fz + 0.18);
+  }
+  // 빈 책상 위 나무 독서대 (앉는 쪽을 보게 뒤로 기울어짐)
+  {
+    const d = rowDesks[3], g = new THREE.Group();
+    const wm = std({ color: 0xc9a46c, roughness: 0.7 }), a = 0.42;
+    const part = (w, h, dz, x, y, z, rx = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, dz), wm); m.position.set(x, y, z); m.rotation.x = rx; m.castShadow = m.receiveShadow = true; g.add(m); };
+    part(0.36, 0.015, 0.26, 0, 0.0075, 0);                                                        // 바닥판
+    part(0.36, 0.28, 0.012, 0, 0.02 + Math.cos(a) * 0.14, 0.06 - Math.sin(a) * 0.14, -a);       // 기울어진 받침판
+    part(0.36, 0.035, 0.022, 0, 0.032, 0.085);                                                   // 아래 턱
+    part(0.03, 0.16, 0.012, 0, 0.015 + Math.cos(0.75) * 0.08, -0.09 + Math.sin(0.75) * 0.08 - 0.02, 0.75);   // 뒤 지지대
+    g.position.set(d.x0 + 0.3, y0 + 0.75, (d.z0 + d.z1) / 2);
+    g.rotation.y = -Math.PI / 2;   // 받침판 앞면이 앉는 쪽(서쪽)을 봄
+    scene.add(g);
+  }
+  // 두꺼운 전공책 『건축시공학』: 하나는 파티션에 기대 세워 두고, 하나는 창가 책상에 눕혀 둠
+  {
+    const B = { w: 0.19, h: 0.26, t: 0.048 };
+    const coverTex = new THREE.TextureLoader().load('images.jpeg');
+    coverTex.colorSpace = THREE.SRGBColorSpace; coverTex.anisotropy = 4;
+    const spineTex = labelTex(64, 512, (g, W, H) => {
+      g.fillStyle = '#1d3428'; g.fillRect(0, 0, W, H);
+      g.fillStyle = '#9aa29c'; g.fillRect(0, 26, W, 3); g.fillRect(0, H - 70, W, 3);
+      g.save(); g.translate(W / 2, 60); g.rotate(Math.PI / 2);
+      g.fillStyle = '#f2f2ec'; g.font = 'bold 34px "Malgun Gothic", sans-serif'; g.textBaseline = 'middle'; g.fillText('건축시공학', 0, 0);
+      g.font = '15px "Malgun Gothic", sans-serif'; g.fillStyle = '#b8c0ba'; g.fillText('6차 개정판', 210, 0);
+      g.restore();
+      g.fillStyle = '#e8e8e2'; g.font = 'bold 13px "Malgun Gothic", sans-serif'; g.textAlign = 'center'; g.fillText('한솔', W / 2, H - 40); g.fillText('아카데미', W / 2, H - 22);
+    });
+    spineTex.colorSpace = THREE.SRGBColorSpace;
+    const pageTex = labelTex(128, 32, (g, W, H) => {   // 종이 단면 (가는 줄)
+      g.fillStyle = '#ece6d6'; g.fillRect(0, 0, W, H);
+      for (let y = 0; y < H; y += 2) { g.fillStyle = `rgba(150,140,120,${0.12 + Math.random() * 0.15})`; g.fillRect(0, y, W, 1); }
+    });
+    const pages = new THREE.MeshStandardMaterial({ map: pageTex, roughness: 0.95 });
+    const mats = [   // +x 앞쪽 종이 / -x 책등 / 위·아래 종이 / 앞표지 / 뒤표지
+      pages, new THREE.MeshStandardMaterial({ map: spineTex, roughness: 0.6 }), pages, pages,
+      new THREE.MeshStandardMaterial({ map: coverTex, roughness: 0.55 }), new THREE.MeshStandardMaterial({ color: 0x1d3428, roughness: 0.6 }),
+    ];
+    const book = (x, y, z, rot) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(B.w, B.h, B.t), mats);
+      m.position.set(x, y, z); m.rotation.copy(rot);
+      m.castShadow = m.receiveShadow = true;
+      scene.add(m);
+    };
+    const sd = rowDesks[0];   // 줄 책상: 서쪽 파티션에 기대어 세움 (앞표지가 앉는 쪽을 봄)
+    book(sd.x0 + 0.03 + B.t / 2 + 0.002, y0 + 0.75 + B.h / 2, (sd.z0 + sd.z1) / 2 - 0.12, new THREE.Euler(0, Math.PI / 2, 0));
+    book(WX0 + 0.55, y0 + 0.75 + B.t / 2, WZ0 + 0.42, new THREE.Euler(-Math.PI / 2, 0.35, 0, 'YXZ'));   // 창가 책상: 표지가 위로 오게 눕힘
+    // 건축기사 실기 책: 표지 이미지 + 책등 글씨, 표지가 위로 오게 눕힘
+    const flatBook = (file, dims, spineDraw, backColor, x, z, yaw) => {
+      const ct = new THREE.TextureLoader().load(file);
+      ct.colorSpace = THREE.SRGBColorSpace; ct.anisotropy = 4;
+      const st = labelTex(64, 512, spineDraw); st.colorSpace = THREE.SRGBColorSpace;
+      const ms = [pages, new THREE.MeshStandardMaterial({ map: st, roughness: 0.6 }), pages, pages,
+        new THREE.MeshStandardMaterial({ map: ct, roughness: 0.55 }), new THREE.MeshStandardMaterial({ color: backColor, roughness: 0.6 })];
+      const m = new THREE.Mesh(new THREE.BoxGeometry(dims.w, dims.h, dims.t), ms);
+      m.position.set(x, y0 + 0.75 + dims.t / 2, z); m.rotation.set(-Math.PI / 2, yaw, 0, 'YXZ');
+      m.castShadow = m.receiveShadow = true;
+      scene.add(m);
+    };
+    const spineText = (bg, fg, title, top, bottom) => (g, W, H) => {
+      g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      if (top) top(g, W, H);
+      g.save(); g.translate(W / 2, 92); g.rotate(Math.PI / 2);
+      g.fillStyle = fg; g.font = 'bold 32px "Malgun Gothic", sans-serif'; g.textBaseline = 'middle'; g.fillText(title, 0, 0);
+      g.restore();
+      g.fillStyle = fg; g.font = 'bold 13px "Malgun Gothic", sans-serif'; g.textAlign = 'center'; g.fillText(bottom, W / 2, H - 26);
+    };
+    flatBook('XL.jpeg', { w: 0.19, h: 0.255, t: 0.038 }, spineText('#f5b800', '#1a1a1a', '에듀윌 건축기사 실기', null, 'eduwill'), 0xf5b800,
+      X1 - 1.75, -6.55, 0.55);   // 칠판 앞 공용 테이블
+    const hd = rowDesks[10];   // 공용 테이블 옆 줄, 가장 복도 쪽 책상
+    flatBook('book_hansol.jpeg', { w: 0.185, h: 0.265, t: 0.046 }, spineText('#1c1a1b', '#f2f2ee', '건축기사 실기 1', (g, W) => {
+      g.fillStyle = '#d0202a'; g.fillRect(6, 18, W - 12, 34); g.fillStyle = '#fff'; g.font = 'bold 11px sans-serif'; g.textAlign = 'center'; g.fillText('The Bible', W / 2, 40); g.textAlign = 'left';
+    }, '한솔'), 0x231f20, (hd.x0 + hd.x1) / 2 + 0.05, (hd.z0 + hd.z1) / 2 + 0.2, Math.PI / 2 + 0.25);
+  }
 
   // 녹색 칠판 (컴퓨터실 쪽 벽)
   sbox(X1 - 0.03, X1, y0 + 0.9, y0 + 2.15, -8.6, -5.2, 'chalk');
@@ -1759,50 +2042,6 @@ function designSupportRoom() {
   }
   // 출입문 옆 전기 분전함
   sbox(X0, X0 + 0.15, y0 + 1.2, y0 + 1.75, -1.0, -0.5, 'counter');
-  // 뒷문 앞 공간: 소형 냉장고 (열어볼 수 있음)
-  {
-    const fx0 = X0, fx1 = X0 + 0.66, fz0 = -2.95, fz1 = -2.3, H = 1.72;
-    const body = 'fridgeBody';
-    if (!M[body]) M[body] = std({ color: 0xdfe2e4, roughness: 0.35, metalness: 0.2 });
-    if (!M.fridgeIn) M.fridgeIn = std({ color: 0xf4f6f6, roughness: 0.6, emissive: 0xeef4ff, emissiveIntensity: 0 });
-    sbox(fx0, fx0 + 0.03, y0, y0 + H, fz0, fz1, body);                 // 뒤판
-    sbox(fx0, fx1, y0, y0 + 0.06, fz0, fz1, body);                     // 바닥
-    sbox(fx0, fx1, y0 + H - 0.03, y0 + H, fz0, fz1, body);             // 윗판
-    sbox(fx0, fx1, y0, y0 + H, fz0, fz0 + 0.03, body);                 // 옆판
-    sbox(fx0, fx1, y0, y0 + H, fz1 - 0.03, fz1, body);
-    sbox(fx0 + 0.03, fx1 - 0.02, y0 + 1.18, y0 + 1.21, fz0 + 0.03, fz1 - 0.03, body);   // 냉동칸 칸막이
-    sbox(fx0 + 0.031, fx0 + 0.035, y0 + 0.06, y0 + H - 0.03, fz0 + 0.03, fz1 - 0.03, 'fridgeIn');
-    for (const y of [0.45, 0.82]) sbox(fx0 + 0.04, fx1 - 0.04, y0 + y, y0 + y + 0.012, fz0 + 0.04, fz1 - 0.04, 'glass');   // 선반
-    addCol(fx0, fx1, y0, y0 + H, fz0, fz1);
-    // 안에 든 것: 음료 캔, 이름 써 붙인 반찬통, 에너지드링크
-    const cols = [0xc82828, 0x2a62c8, 0x2a9a3a, 0xe0b020, 0x202020];
-    for (let i = 0; i < 5; i++) {
-      const k = 'fcan' + i; if (!M[k]) M[k] = std({ color: cols[i], roughness: 0.3, metalness: 0.6 });
-      const g = new THREE.CylinderGeometry(0.033, 0.033, 0.12, 10); g.translate(fx0 + 0.2 + (i % 2) * 0.15, y0 + 0.88, fz0 + 0.12 + i * 0.1); addGeo(g, k);
-    }
-    for (let i = 0; i < 3; i++) { const g = new THREE.CylinderGeometry(0.035, 0.035, 0.26, 10); g.translate(fx0 + 0.18, y0 + 0.19, fz0 + 0.15 + i * 0.13); addGeo(g, i === 1 ? 'sojuGreen2' : 'paper'); }
-    if (!M.sojuGreen2) M.sojuGreen2 = std({ color: 0x2f8f4f, roughness: 0.15, transparent: true, opacity: 0.85 });
-    sbox(fx0 + 0.12, fx0 + 0.42, y0 + 0.462, y0 + 0.56, fz0 + 0.1, fz0 + 0.32, 'quartz');      // 반찬통
-    sbox(fx0 + 0.12, fx0 + 0.42, y0 + 0.56, y0 + 0.575, fz0 + 0.1, fz0 + 0.32, 'redSeat');
-    sbox(fx0 + 0.42, fx0 + 0.421, y0 + 0.49, y0 + 0.53, fz0 + 0.14, fz0 + 0.28, 'paper');      // 이름표
-    // 문 (경첩: 창가 쪽 모서리)
-    const pivot = new THREE.Group();
-    pivot.position.set(fx1, y0, fz0);
-    const doorM = new THREE.Mesh(new THREE.BoxGeometry(0.04, H - 0.04, fz1 - fz0), M[body]);
-    doorM.position.set(0.02, (H - 0.04) / 2 + 0.02, (fz1 - fz0) / 2);
-    doorM.castShadow = true;
-    const line = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.012, fz1 - fz0 - 0.02), M.darkMetal);
-    line.position.set(0.02, 1.2, (fz1 - fz0) / 2);
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.4, 0.025), M.alu);
-    handle.position.set(0.055, 0.95, fz1 - fz0 - 0.06);
-    pivot.add(doorM, line, handle);
-    scene.add(pivot);
-    const fridge = { pivot, open: false, angle: 0, target: 0, seen: false };
-    swingers.push(fridge);
-    const it = { type: 'fridge', fridge };
-    doorM.userData.it = it; interactables.push(doorM);
-    addProxy(fx1 - 0.02, fx1 + 0.06, y0, y0 + H, fz0, fz1, it);
-  }
 
   // 책상 위 '누군가의 베이지색 가방' (안에 든 책 사이에 2층 콘크리트 연구실 카드키)
   const bd = rowDesks[9];
@@ -1844,7 +2083,7 @@ function designSupportRoom() {
   const lapGlow = new THREE.PointLight(0xbcd4ea, 0.35, 2.2, 2);
   lapGlow.position.set(lx + 0.2, y0 + 0.95, lz);
   scene.add(lapGlow);
-  addProxy(lx - 0.15, lx + 0.15, y0 + 0.75, y0 + 1.0, lz - 0.18, lz + 0.18, { type: 'laptop' });
+  addProxy(lx - 0.15, lx + 0.15, y0 + 0.75, y0 + 1.0, lz - 0.18, lz + 0.18, { type: 'laptop', spark: addSparkle(new THREE.Vector3(lx - 0.02, y0 + 1.02, lz), 0.22) });   // 볼 수 있다는 표시 (보고 나면 꺼짐)
 }
 
 // ---------- 3층 설계실 (309호) — 모형 작업실 ----------
@@ -2680,7 +2919,7 @@ for (let n = 0; n < 4; n++) {
         const x = wx0 + (wx1 - wx0) * i / 4;
         sbox(x - 0.03, x + 0.03, y0 + 0.9, y0 + 2.8, 3.03, 3.17, K('alu'));
       }
-      if (n === 3) cabinet(wx0, wx1, y0, K);   // 사물함은 4층에만
+      if (n === 3) cabinet(wx0, k === 18 ? FIRE_X0 - 0.05 : wx1, y0, K);   // 사물함은 4층에만 (방화구획 벽 앞에서 끊음)
       continue;
     }
     if (type === 'mid') {   // 가운데 홀 입구 (k=9,10 두 칸을 한 번에)
@@ -2719,7 +2958,7 @@ for (let n = 0; n < 4; n++) {
 
     if (type === 'blank' && n === 3) cabinet(wx0, wx1, y0, K);
     if (type === 'design') {
-      if (n === 3) cabinet(wx0, DESIGN_DOOR - 0.75, y0, K);
+      if (n === 3) steelLocker(FIRE_PILLAR + 0.3, DESIGN_DOOR - 0.85, y0);   // 방화문 너머: 2단 × 5칸 철제 사물함
       const cx = DESIGN_DOOR;
       sbox(cx - 0.5, cx - 0.45, y0, y0 + 2.15, 2.97, 3.23, K('doorFrame'));
       sbox(cx + 0.45, cx + 0.5, y0, y0 + 2.15, 2.97, 3.23, K('doorFrame'));
@@ -2747,7 +2986,11 @@ for (let n = 0; n < 4; n++) {
   }
   for (let k = 1; k < 20; k++) {
     if (k === 10) continue;   // 가운데 홀 입구
-    const x = -HALF + 4.5 * k;
+    let x = -HALF + 4.5 * k;
+    if (k === 19 && n > 0) {   // 방화문 문짝과 안 겹치게 동쪽으로 옮기고, 비는 벽은 채움
+      sbox(x - 0.25, FIRE_PILLAR - 0.25, y0, y0 + FH, 3.0, CW, K('paint'), true);
+      x = FIRE_PILLAR;
+    }
     sbox(x - 0.25, x + 0.25, y0, y0 + FH, 2.35, CW, K('paint'), true);
   }
 
@@ -2758,8 +3001,9 @@ for (let n = 0; n < 4; n++) {
   else if (n === 1) segs = [[-HALF, 39.1]];   // 2층: 가운데 빈 공간 없이 벽으로 메움
   else segs = [[-HALF, -2.9], [6.1, 39.1]];   // 4층: 휴게실 통유리 (-2.9 ~ 6.1)
   const holes = [{ a: ELEV_X - 0.6, b: ELEV_X + 0.6, c: y0, d: y0 + 2.2 }];
+  if (n === 0) for (const rm of F1_ROOMS) for (const cx of f1DoorXs(rm)) holes.push(rm.glass ? { a: cx - 1.0, b: cx + 1.0, c: y0, d: y0 + 2.4 } : { a: cx - 0.5, b: cx + 0.5, c: y0, d: y0 + 2.72 });
   if (n > 0) {
-    for (let r = 0; r < 8; r++) for (const off of [1.2, 7.8]) {
+    for (let r = 0; r < 8; r++) for (const off of doorOffs(n, r)) {
       if (n === 3 && (r === 4 || r === 5)) continue;
       const cx = roomX0(r) + off;
       holes.push({ a: cx - 0.5, b: cx + 0.5, c: y0, d: y0 + 2.72 });
@@ -2772,6 +3016,8 @@ for (let n = 0; n < 4; n++) {
     wallZ(a, b, y0, y0 + 0.1, 0, 0.015, holes, K('baseboard'), false);
   }
   elevator(y0);
+  if (n === 0) floor1Rooms(y0, K);
+  if (n > 0) fireCompartment(y0, K);
   if (n === 3) lounge(y0);
   if (n === 2) openSpace(y0);
   if (n === 2) office();
@@ -2826,7 +3072,7 @@ for (let n = 0; n < 4; n++) {
         sg.position.set(r === 4 ? cx - 0.85 : cx + 0.85, y0 + 1.75, 0.012); scene.add(sg);
         continue;
       }
-      for (const off of [1.2, 7.8]) {
+      for (const off of doorOffs(n, r)) {
         const cx = rx + off;
         if (isPrinter) { makeAutoDoor(cx, -0.03, y0, 'z'); continue; }   // 302호: 유리 자동문
         sbox(cx - 0.5, cx - 0.45, y0, y0 + 2.72, -0.24, 0.03, K('doorFrame'));
@@ -2893,23 +3139,23 @@ for (let n = 0; n < 3; n++) {   // 1~3층 복도등 (엘리베이터 옆 스위�
 const alarms = [];
 function makeAlarm(x, n) {
   const y0 = n * FH;
-  sbox(x - 0.38, x + 0.38, y0 + 0.7, y0 + 1.7, 0, 0.14, 'red', true);
-  sbox(x - 0.005, x + 0.005, y0 + 0.74, y0 + 1.66, 0.14, 0.15, 'darkMetal');
-  sbox(x + 0.26, x + 0.3, y0 + 1.15, y0 + 1.25, 0.14, 0.17, 'alu');
-  signPlane(textTex(256, 96, '#c41a1a', '#ffffff', [['소 화 전', 46, 0.52]]), 0.46, 0.17, x, y0 + 1.5, 0.152);
-  sbox(x - 0.3, x + 0.3, y0 + 1.78, y0 + 2.22, 0, 0.06, 'red');   // 비상벨 함
-  const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 20), M.red); bell.rotation.x = Math.PI / 2; bell.position.set(x - 0.15, y0 + 2.0, 0.085); scene.add(bell);
+  sbox(x - 0.38, x + 0.38, y0 + 0.62, y0 + 1.62, 0, 0.14, 'red', true);
+  sbox(x - 0.005, x + 0.005, y0 + 0.66, y0 + 1.58, 0.14, 0.15, 'darkMetal');
+  sbox(x + 0.26, x + 0.3, y0 + 1.07, y0 + 1.17, 0.14, 0.17, 'alu');
+  signPlane(textTex(256, 96, '#c41a1a', '#ffffff', [['소 화 전', 46, 0.52]]), 0.46, 0.17, x, y0 + 1.42, 0.152);
+  sbox(x - 0.3, x + 0.3, y0 + 1.68, y0 + 2.02, 0, 0.06, 'red');   // 비상벨 함 (문 사이 창 아래까지만)
+  const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 20), M.red); bell.rotation.x = Math.PI / 2; bell.position.set(x - 0.15, y0 + 1.85, 0.085); scene.add(bell);
   const lampMat = std({ color: 0x5a0000, emissive: 0xff2020, emissiveIntensity: 0.25, roughness: 0.3 });
-  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 8), lampMat); lamp.position.set(x + 0.16, y0 + 2.08, 0.07); scene.add(lamp);
-  const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 14), std({ color: 0xe8e8e8, roughness: 0.4 })); btn.rotation.x = Math.PI / 2; btn.position.set(x + 0.16, y0 + 1.9, 0.075); scene.add(btn);
-  signPlane(textTex(128, 48, '#ffffff', '#c41a1a', [['비상벨 · 누르세요', 15, 0.55]]), 0.2, 0.075, x + 0.16, y0 + 1.82, 0.062);
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 8), lampMat); lamp.position.set(x + 0.16, y0 + 1.94, 0.07); scene.add(lamp);
+  const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 14), std({ color: 0xe8e8e8, roughness: 0.4 })); btn.rotation.x = Math.PI / 2; btn.position.set(x + 0.16, y0 + 1.82, 0.075); scene.add(btn);
+  signPlane(textTex(128, 48, '#ffffff', '#c41a1a', [['비상벨 · 누르세요', 15, 0.55]]), 0.2, 0.075, x + 0.16, y0 + 1.73, 0.062);
   const alarm = { x, n, y0, lampMat, ringT: 0, tick: 0, flip: false };
   alarms.push(alarm);
-  addProxy(x - 0.4, x + 0.4, y0 + 0.7, y0 + 2.25, 0, 0.22, { type: 'alarm', alarm });
+  addProxy(x - 0.4, x + 0.4, y0 + 0.62, y0 + 2.04, 0, 0.22, { type: 'alarm', alarm });
 }
-for (let n = 0; n < 4; n++) {
-  makeAlarm(roomX0(1) + 5.6, n);
-  if (n > 0) makeAlarm(roomX0(6) + 5.6, n);
+for (let n = 0; n < 4; n++) {   // 문(1.2 / 7.8, 408호는 6.4)·게시물(3.2~3.75) 사이 빈 벽
+  makeAlarm(roomX0(1) + 4.85, n);
+  if (n === 3) makeAlarm(roomX0(6) + 4.85, n);   // 2·3층은 엘베 쪽 하나만
 }
 function bellRing(a) {
   if (!actx) return;
@@ -3820,6 +4066,10 @@ function closePC(relock) {
 let laptopSeen = false, laptopRead = false;
 const laptopEl = document.getElementById('laptop'), boardViewEl = document.getElementById('boardView'), boardImg = document.getElementById('boardImg');
 document.getElementById('ltCloseX').addEventListener('click', () => closeLaptop(true));
+function hideLaptopSpark() {
+  const it = interactables.map((o) => o.userData.it).find((x) => x && x.type === 'laptop');
+  if (it && it.spark) it.spark.visible = false;
+}
 function openLaptop() {
   uiOpen = true; uiMode = 'laptop';
   laptopEl.style.display = 'block';
@@ -3832,6 +4082,7 @@ function closeLaptop(relock) {
   if (relock) controls.lock(); else overlay.style.display = 'flex';
   if (!laptopRead) {
     laptopRead = true; laptopSeen = true;
+    hideLaptopSpark();
     const bagIt = interactables.map((o) => o.userData.it).find((x) => x && x.type === 'bag');
     if (bagIt && !bagIt.searched) bagIt.spark.visible = true;
     monologue(['학생회장 자리 에코백…?', '설마 저기 있는 베이지색 가방인가?', '교수님 생신… 학생회실에 가면 날짜가 나와있을지도?']);
@@ -3905,8 +4156,18 @@ class LookControls extends THREE.EventDispatcher {
 const controls = new LookControls(camera, document.body);
 const overlay = document.getElementById('overlay');
 overlay.addEventListener('pointerdown', () => initAudio());   // 아무 데나 누르면 소리 시작 (시작 화면 형광등 소리)
-document.getElementById('btnStart').addEventListener('click', (e) => { e.stopPropagation(); exitTitle(); initAudio(); controls.lock(); });
+let gameBegun = false;
+document.getElementById('btnStart').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!gameBegun && !qs.get('continue')) { try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* 저장소 없음 */ } }   // 새 게임: 예전 저장 삭제
+  exitTitle(); initAudio(); controls.lock();
+});
+document.getElementById('btnResume').addEventListener('click', (e) => { e.stopPropagation(); location.href = location.pathname + '?continue=1'; });
+document.getElementById('btnToTitle').addEventListener('click', (e) => { e.stopPropagation(); location.href = location.pathname; });
 controls.addEventListener('lock', () => {
+  gameBegun = true;
+  document.getElementById('btnResume').style.display = 'none';
+  document.getElementById('btnToTitle').style.display = '';   // 일시정지 화면에서 시작 화면으로 돌아갈 수 있음
   overlay.style.display = 'none';
   settingsEl.style.display = 'none';
   document.getElementById('btnExplore').style.display = 'none';   // 게임을 시작하면 탐방 모드 버튼은 숨김
@@ -4196,10 +4457,10 @@ function interact() {
     setTimeout(startRaid, 1500);   // 복도에서 발소리… 5초 안에 숨어야 함
   } else if (it.type === 'fridge') {
     const f = it.fridge;
-    f.open = !f.open; f.target = f.open ? 1.85 : 0;
+    f.open = !f.open; f.target = f.open ? (f.openAng ?? 1.85) : 0;
     noiseBurst(0.15, f.open ? 700 : 260, 0.3);
     M.fridgeIn.emissiveIntensity = f.open ? 0.6 : 0;
-    if (f.open && !f.seen) { f.seen = true; showMsg('누군가 이름 써 붙여 둔 반찬통이랑 음료수가 들어 있다. 건드리지 말자.', 3.5); }
+    if (f.open && !f.seen) { f.seen = true; showMsg(f.msg || '누군가 이름 써 붙여 둔 반찬통이랑 음료수가 들어 있다. 건드리지 말자.', 3.5); }
   } else if (it.type === 'laptop') {
     openLaptop();
   } else if (it.type === 'alarm') {
@@ -5231,8 +5492,8 @@ function navRoom(n, doors, pts, links) {
 const DR = (k) => navDoorRefs[k] || null;
 navRoom(3, [[12.6, DR('3-4-1.2')]], [[7.4, -1.2], [7.4, -6.4], [11.5, -6.4]], [['d0', 0], [0, 1], [1, 2]]);   // 404-2호 (옛 405호)
 navRoom(3, [[-10.8, DR('3-3-1.2')], [-4.2, DR('3-3-7.8')]], [[-4.6, -5.4], [-11.2, -5.4]], [['d0', 'd1'], ['d1', 0], [0, 1], [1, 'd0']]);         // 컴퓨터실
-navRoom(3, [[-19.8, DR('3-2-1.2')], [-13.2, DR('3-2-7.8')]], [[-14.0, -4.6], [-17.3, -4.6], [-17.3, -7.6], [-19.6, -2.5]],
-  [['d0', 'd1'], ['d1', 0], [0, 1], [1, 2], ['d0', 3], [3, 1]]);                                                                                    // 설계지원실
+navRoom(3, [[-19.8, DR('3-2-1.2')], [-13.2, DR('3-2-7.8')]], [[-15.0, -1.0], [-17.65, -1.0], [-17.65, -5.0], [-17.65, -8.45], [-20.65, -1.0], [-20.65, -5.5], [-15.0, -5.0]],
+  [['d0', 'd1'], ['d1', 0], [0, 1], [1, 2], [2, 3], ['d0', 1], ['d0', 4], [4, 1], [4, 5], [0, 6]]);                                                                                    // 설계지원실
 navRoom(2, [[-4.2, DR('office')]], [[-4.2, -3.0], [-4.6, -5.7], [-8.8, -5.7]], [['d0', 0], [0, 1], [1, 2]]);                                       // 과사무실
 navRoom(1, [[-10.8, DR('1-3-1.2')], [-4.2, DR('1-3-7.8')]], [[-5.5, -6.5], [-10.3, -6.5]], [['d0', 'd1'], ['d1', 0], [0, 1], [1, 'd0']]);         // 콘크리트 연구실
 navRoom(2, [[-37.8, DR('2-0-1.2')], [-31.2, DR('2-0-7.8')]], [[-37.9, -6.6], [-33.0, -3.3]], [['d0', 'd1'], ['d0', 0], ['d0', 1], [1, 'd1']]);   // 3층 설계실
@@ -5938,11 +6199,11 @@ const AI_LAP = [
 ];
 // [x, z, 멈춰서 둘러보는 시간, 책상 밑 뒤지기]
 const RAID_LAP = [
-  [-14.65, -4.6, 0, false], [-14.65, -8.6, 1.6, true],          // 큰 테이블 옆 통로 → 창가
-  [-17.3, -8.6, 0, false], [-17.3, -6.4, 1.2, true],            // 가운데 통로
-  [-17.3, -4.2, 0.6, false], [-17.3, -3.4, 0, false],
-  [-19.9, -3.2, 0, false], [-19.9, -6.0, 1.2, true], [-19.9, -8.0, 1.4, true],   // 뒷문 쪽 벽 책상 줄
-  [-19.9, -3.2, 0, false], [-16.5, -2.4, 1.0, false],           // 앞쪽을 가로질러
+  [-15.0, -3.0, 0, false], [-15.0, -8.45, 1.6, true],            // 큰 테이블 옆 통로 → 창가
+  [-17.65, -8.45, 0, false], [-17.65, -6.4, 1.2, true],          // 가운데 통로
+  [-17.65, -4.2, 0.6, false], [-17.65, -1.0, 0, false],
+  [-20.65, -1.0, 0, false], [-20.65, -5.0, 1.2, true], [-20.65, -7.8, 1.4, true],   // 뒷문 쪽 벽 책상 줄
+  [-20.65, -1.0, 0, false], [-16.5, -1.0, 1.0, false],          // 앞쪽을 가로질러
   [-13.2, -1.0, 0, false],                                      // 앞문으로 나감
 ];
 function startRaid(kind = 'dsr') {
@@ -6583,6 +6844,7 @@ function loadSave() {
   inventory.length = 0; inventory.push(...s.inv); renderInventory();
   [pcSeen, pcNotified] = s.pc;
   laptopSeen = laptopRead = !!s.lap;
+  if (laptopSeen) hideLaptopSpark();
   story.comp = s.comp === 'ambush' ? 'done' : s.comp;
   story.aiRaidDone = !!s.aiRaid; story.keyDrop = s.keyDrop || null;
   story.keyEv = s.keyEv === 'chase' ? 'gotKey' : s.keyEv === 'dropped' ? 'lost' : s.keyEv === 'flee' ? 'escaped'
@@ -6613,7 +6875,7 @@ controls.addEventListener('lock', () => {
   startRoaming(true);
 });
 if (qs.get('continue')) loadSave();
-else { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 저장소 없음 */ } }   // 새 게임이면 예전 저장 삭제
+else if (titleMode && hasSave()) document.getElementById('btnResume').style.display = '';   // 시작 화면: 저장이 있으면 이어하기 (새 게임을 시작할 때 지움)
 
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
