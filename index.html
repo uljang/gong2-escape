@@ -166,16 +166,47 @@
     color: #d8d0c4; font-size: 18px; letter-spacing: 2px; pointer-events: none;
     text-shadow: 0 0 8px #000; opacity: 0; transition: opacity 0.4s;
   }
+  /* 시작 화면: 뒤로 4층 복도가 보이고, 왼쪽에 제목과 메뉴 */
   #overlay {
-    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.82); color: #cfc8bb; cursor: pointer; user-select: none; text-align: center;
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: flex-start; z-index: 20;
+    background: linear-gradient(90deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 38%, rgba(0,0,0,0.05) 70%, rgba(0,0,0,0.35) 100%);
+    color: #cfc8bb; user-select: none; font-family: 'Malgun Gothic', sans-serif;
   }
-  #overlay h1 { font-size: 42px; letter-spacing: 12px; margin: 0 0 8px; color: #e6dfd2; font-weight: 300; }
-  #overlay .sub { color: #7d756b; margin-bottom: 36px; letter-spacing: 3px; }
-  #overlay .keys { line-height: 2; font-size: 15px; color: #a39b8f; }
-  #overlay .keys b { display: inline-block; min-width: 64px; color: #e6dfd2; font-weight: 600; }
-  #overlay .start { margin-top: 36px; font-size: 18px; animation: blink 2s infinite; color: #e6dfd2; }
-  @keyframes blink { 50% { opacity: 0.25; } }
+  #overlay.paused { background: rgba(0,0,0,0.8); }
+  #overlay .ov-main { margin-left: 9vw; max-width: 520px; }
+  #overlay .ttl { position: relative; font-family: 'Batang', 'Gungsuh', serif; font-size: 84px; font-weight: 400; letter-spacing: 18px; margin: 0;
+    color: #d8d0c2; text-shadow: 0 0 22px rgba(150,0,0,0.55), 0 0 2px #000; animation: ttlFlicker 7s infinite; }
+  #overlay .ttl::before, #overlay .ttl::after { content: attr(data-t); position: absolute; left: 0; top: 0; width: 100%; opacity: 0; pointer-events: none; }
+  #overlay .ttl::before { color: #c01818; animation: glitchA 5s infinite steps(1); }
+  #overlay .ttl::after { color: #6fb8c8; animation: glitchB 5s infinite steps(1); }
+  @keyframes ttlFlicker { 0%, 100% { opacity: 1; } 41% { opacity: 1; } 42% { opacity: 0.25; } 43% { opacity: 0.9; } 44% { opacity: 0.1; } 46% { opacity: 1; } 78% { opacity: 1; } 79% { opacity: 0.55; } 80% { opacity: 1; } }
+  @keyframes glitchA { 0%, 88%, 100% { opacity: 0; transform: none; } 89% { opacity: 0.75; transform: translate(-5px, 1px); clip-path: inset(10% 0 55% 0); } 91% { opacity: 0.6; transform: translate(4px, -1px); clip-path: inset(60% 0 8% 0); } 93% { opacity: 0; } }
+  @keyframes glitchB { 0%, 88%, 100% { opacity: 0; transform: none; } 89% { opacity: 0.5; transform: translate(5px, -1px); clip-path: inset(45% 0 30% 0); } 92% { opacity: 0.45; transform: translate(-3px, 2px); clip-path: inset(5% 0 70% 0); } 94% { opacity: 0; } }
+  #overlay .rule { width: 260px; height: 1px; margin: 14px 0 10px; background: linear-gradient(90deg, #8c1414, rgba(140,20,20,0)); }
+  #overlay .sub { color: #8f5a52; letter-spacing: 6px; font-size: 14px; }
+  #overlay .menu { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 54px; }
+  #overlay .mbtn { position: relative; background: none; border: none; padding: 6px 0; cursor: pointer; font-family: inherit;
+    font-size: 22px; letter-spacing: 7px; color: #a8a094; text-align: left; transition: color 0.2s, padding-left 0.25s, text-shadow 0.2s; }
+  #overlay .mbtn::before { content: ''; position: absolute; left: 0; top: 50%; width: 0; height: 2px; background: #b01414; transition: width 0.25s; }
+  #overlay .mbtn:hover { color: #f2ece2; padding-left: 30px; text-shadow: 0 0 12px rgba(200,20,20,0.85); animation: jitter 0.25s infinite steps(2); }
+  #overlay .mbtn:hover::before { width: 18px; }
+  @keyframes jitter { 50% { transform: translate(1px, -1px); } }
+  #overlay .mnote { font-size: 11px; color: #6f6a62; letter-spacing: 1px; margin: -6px 0 4px 2px; }
+  #overlay .foot { position: fixed; right: 3vw; bottom: 3vh; font-size: 12px; color: #6a5f58; letter-spacing: 2px; text-align: right; line-height: 1.8; }
+  #overlay.paused .ov-main .mnote, #overlay.paused .foot { display: none; }
+  #settings { display: none; position: fixed; inset: 0; z-index: 21; align-items: center; justify-content: center; background: rgba(0,0,0,0.86); }
+  #settings .box { width: min(860px, 92vw); padding: 34px 40px; border: 1px solid rgba(160,40,40,0.35); background: rgba(8,6,7,0.92); box-shadow: 0 0 60px rgba(120,0,0,0.25); }
+  #settings h2 { margin: 0 0 22px; font-weight: 400; letter-spacing: 8px; color: #e0d8cc; font-size: 22px; }
+  #settings .cols { display: flex; gap: 48px; flex-wrap: wrap; }
+  #settings .keys { line-height: 2; font-size: 14px; color: #a39b8f; flex: 1 1 340px; }
+  #settings .keys b { display: inline-block; min-width: 70px; color: #e6dfd2; font-weight: 600; }
+  #settings .opts { flex: 1 1 260px; display: flex; flex-direction: column; gap: 22px; }
+  #settings .opts label { font-size: 14px; color: #c8c0b4; letter-spacing: 2px; display: flex; flex-direction: column; gap: 8px; }
+  #settings .opts label span { color: #b04040; margin-left: 8px; }
+  #settings input[type=range] { width: 100%; accent-color: #a01c1c; }
+  #settings .mbtn { margin-top: 26px; background: none; border: 1px solid rgba(200,190,175,0.35); color: #d8d0c4; padding: 8px 28px; cursor: pointer; letter-spacing: 4px; font-family: inherit; font-size: 14px; }
+  #settings .mbtn:hover { border-color: #b01414; color: #fff; }
+  body.menu-on #crosshair, body.menu-on #hotbar, body.menu-on #hp, body.menu-on #objective, body.menu-on #eye, body.menu-on #prompt, body.menu-on #msg { visibility: hidden; }
 </style>
 <script type="importmap">
 { "imports": {
@@ -268,23 +299,44 @@
 </div>
 <div id="boardView"><img id="boardImg" alt=""></div>
 <div id="overlay">
-  <h1>공2탈출</h1>
-  <div class="sub">공대 2호관 · 새벽</div>
-  <div class="keys">
-    <div><b>W A S D</b> 이동</div>
-    <div><b>마우스</b> 둘러보기</div>
-    <div><b>Shift</b> 달리기</div>
-    <div><b>클릭</b> 문 열기 / 줍기 / 숨기 / 스위치</div>
-    <div><b>Q</b> (누르고 있기) 뒤돌아보기</div>
-    <div><b>Tab</b> 인벤토리</div>
-    <div><b>F</b> 플래시 켜기 / 끄기</div>
-    <div><b>Space</b> (붙잡혔을 때 연타) 뿌리치기 · 1회</div>
-    <div><b>ESC</b> 일시정지</div>
+  <div class="ov-main">
+    <h1 class="ttl" data-t="공2탈출">공2탈출</h1>
+    <div class="rule"></div>
+    <div class="sub">공대 2호관 · 새벽 3시 12분</div>
+    <div class="menu">
+      <button class="mbtn start" id="btnStart">게임 시작</button>
+      <button class="mbtn" id="btnExplore">탐방 모드</button>
+      <div class="mnote" id="exploreNote">범인·스토리 없이 학교를 자유롭게 둘러봅니다</div>
+      <button class="mbtn" id="btnSettings">조작법 및 설정</button>
+    </div>
+    <div id="modelNote" style="margin-top:18px;font-size:12px;color:#8d6a5a;display:none"></div>
   </div>
-  <div class="start">클릭하여 시작</div>
-  <button id="btnExplore" style="margin-top:16px;padding:8px 22px;background:none;border:1px solid #8a9aa8;color:#d8e2ea;cursor:pointer;font-size:14px;letter-spacing:2px">탐방 모드</button>
-  <div id="exploreNote" style="margin-top:6px;font-size:11px;color:#7d8a96">범인·스토리 없이 학교를 자유롭게 둘러봅니다</div>
-  <div id="modelNote" style="margin-top:14px;font-size:12px;color:#8d6a5a;display:none"></div>
+  <div class="foot">헤드폰 착용을 권장합니다<br>이 게임은 허구이며 실제 인물·사건과 관계없습니다</div>
+</div>
+<div id="settings">
+  <div class="box">
+    <h2>조작법 및 설정</h2>
+    <div class="cols">
+      <div class="keys">
+        <div><b>W A S D</b> 이동</div>
+        <div><b>마우스</b> 둘러보기</div>
+        <div><b>Shift</b> 달리기</div>
+        <div><b>C</b> 웅크리기 / 일어서기</div>
+        <div><b>클릭</b> 문 열기 / 줍기 / 숨기 / 스위치</div>
+        <div><b>Q</b> (누르고 있기) 뒤돌아보기</div>
+        <div><b>Tab</b> 인벤토리</div>
+        <div><b>F</b> 플래시 켜기 / 끄기</div>
+        <div><b>Space</b> (붙잡혔을 때 연타) 뿌리치기 · 1회</div>
+        <div><b>ESC</b> 일시정지</div>
+      </div>
+      <div class="opts">
+        <label>마우스 감도<span id="vSens"></span><input type="range" id="optSens" min="0.3" max="2.5" step="0.05"></label>
+        <label>음량<span id="vVol"></span><input type="range" id="optVol" min="0" max="1.5" step="0.05"></label>
+        <label>밝기<span id="vBright"></span><input type="range" id="optBright" min="0.6" max="2" step="0.05"></label>
+      </div>
+    </div>
+    <button class="mbtn" id="btnSetClose">돌아가기</button>
+  </div>
 </div>
 
 <script type="module">
@@ -304,7 +356,7 @@ const TOP = 3 * FH + 3.6; // 계단실 꼭대기
 const START_ROOM = 4;     // 0부터 셈 → 405호
 
 const EYE = 1.6, PLAYER_R = 0.3;
-const WALK = 2.2, RUN = 4.0;
+const WALK = 2.2, RUN = 4.0, CROUCH = 1.25, CROUCH_EYE = 0.95;
 const FLASH_INTENSITY = 60;
 const ROOM_LIGHT = 22;
 
@@ -328,7 +380,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x030305);
 scene.fog = new THREE.FogExp2(0x05060a, 0.045);
 
-const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 600);
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.08, 600);
 
 // ================= 텍스처 =================
 const maxAniso = renderer.capabilities.getMaxAnisotropy();
@@ -2550,9 +2602,10 @@ function buildStair({ xa, xb, z0, s, side = null, back = false, header = false, 
     box(xa, xb, y0 - 0.3, y0, 0, 1.6, 'stair');
     flatD(xa, xb, -0.2, 1.6, y0);
     if (header) box(xa, xb, y0 + CH, n === 3 ? TOP : y0 + FH, -0.2, 0, 'stairWall');
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.44), new THREE.MeshStandardMaterial({ map: floorSignTex[n], roughness: 0.5 }));
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.44), new THREE.MeshStandardMaterial({ map: floorSignTex[n], roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 }));
     if (signWall) { sign.position.set(xb - 0.012, y0 + 1.7, Z(0.8)); sign.rotation.y = -Math.PI / 2; }   // 동쪽 벽(들어가서 왼쪽)에 붙임
     else if (signFront) { sign.position.set(xa + 1.5, y0 + 1.7, z0 + s * 0.016); sign.rotation.y = s > 0 ? 0 : Math.PI; }   // 홀에서 들어가서 왼쪽 벽
+    else if (side === 'xa') { sign.position.set(xa + 0.006, y0 + 1.7, Z(0.8)); sign.rotation.y = Math.PI / 2; }   // 서쪽 벽(들어가서 왼쪽)에 붙임
     else { sign.position.set(mid, y0 + 1.7, Z(1.594)); sign.rotation.y = s > 0 ? Math.PI : 0; }
     scene.add(sign);
 
@@ -2865,7 +2918,7 @@ function bellRing(a) {
   const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
   o.type = 'square'; o.frequency.value = a.flip ? 1650 : 1800; a.flip = !a.flip;
   g.gain.setValueAtTime(0.045 * v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-  o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.07);
+  o.connect(g).connect(master); o.start(t); o.stop(t + 0.07);
 }
 addRoom('corridor4', {   // 4층 복도등 (엘리베이터 옆 스위치, 적당한 밝기)
   x0: -HALF, x1: HALF, z0: -0.2, z1: 3.0, y0: 3 * FH, mult: 0.5,
@@ -3075,6 +3128,7 @@ addCol(4.4, 4.6, 3 * FH, 3 * FH + 1.0, CW + 1.6, 10.6);
     for (let x = 0; x <= w; x += 4) g.lineTo(x, 46 + Math.sin(x / w * Math.PI * 4) * 22 + Math.sin(x / w * Math.PI * 10) * 5);
     g.lineTo(w, h); g.closePath(); g.fill();
   });
+  waveTex.wrapT = THREE.ClampToEdgeWrapping;   // 띠 위쪽 가장자리에 아래쪽 검은 픽셀이 점선처럼 비치지 않게
   M.stairWave = new THREE.MeshStandardMaterial({ map: waveTex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.8 });
   const { xa, xb } = MID_STAIR, BZ = 10.6, HW = 0.34;
   wallX(CW, BZ, 0, TOP, xa, xa + 0.008, [0, 1, 2].map((n) => ({ a: CW, b: CW + 1.6, c: n * FH, d: n * FH + 2.4 })).concat([{ a: CW, b: BZ, c: 3 * FH, d: 3 * FH + CH }]), 'stairYellow', false);
@@ -3110,6 +3164,23 @@ addCol(4.4, 4.6, 3 * FH, 3 * FH + 1.0, CW + 1.6, 10.6);
     strip('x', xb - 0.014, [[CW, y0 + 4], [za, y0 + 4], [zb, y0 + 2 + ST], [BZ, y0 + 2]]); // 반대쪽 벽: 위층 바닥 → 내려가는 계단 → 참
     strip('z', BZ - 0.014, [[xa, y0 + 2], [xb, y0 + 2]]);                                 // 참 뒷벽
     if (n === 0) strip('x', xb - 0.014, [[CW, 0], [za, 0]]);
+  }
+  {   // 엘리베이터 쪽 계단실도 똑같이 (복도 쪽 벽엔 1~3층 문, 4층 서쪽은 난간)
+    const { xa: la, xb: lb } = LEFT_STAIR, dc = (la + lb) / 2;
+    sbox(la, la + 0.008, 0, 3 * FH, CW, BZ, 'stairYellow');
+    sbox(lb - 0.008, lb, 0, TOP, CW, BZ, 'stairYellow');
+    sbox(la, lb, 0, TOP, BZ - 0.008, BZ, 'stairYellow');
+    wallZ(la, lb, 0, TOP, CW, CW + 0.008, [0, 1, 2].map((n) => ({ a: dc - 0.55, b: dc + 0.55, c: n * FH, d: n * FH + 2.2 })), 'stairYellow', false);
+    for (let n = 0; n < 4; n++) {
+      const y0 = n * FH;
+      if (n < 3) { strip('z', CW + 0.014, [[la, y0], [dc - 0.55, y0]]); strip('z', CW + 0.014, [[dc + 0.55, y0], [lb, y0]]); }
+      else strip('z', CW + 0.014, [[la, y0], [lb, y0]]);
+      if (n === 3) continue;
+      strip('x', la + 0.014, [[CW, y0], [za, y0], [zb, y0 + 2 + ST], [BZ, y0 + 2]]);
+      strip('x', lb - 0.014, [[CW, y0 + 4], [za, y0 + 4], [zb, y0 + 2 + ST], [BZ, y0 + 2]]);
+      strip('z', BZ - 0.014, [[la, y0 + 2], [lb, y0 + 2]]);
+      if (n === 0) strip('x', lb - 0.014, [[CW, 0], [za, 0]]);
+    }
   }
 }
 wallZ(-4.4, 4.4, 0, TOP + 0.2, HALL.z1, MEN.z0, [{ a: -0.6, b: 0.6, c: 3 * FH, d: 3 * FH + 2.3 }, { a: -0.6, b: 0.6, c: FH, d: FH + 2.3 }, { a: -0.5, b: 0.5, c: 2 * FH, d: 2 * FH + 2.15 }, { a: -3.0, b: 3.0, c: 0, d: 2.8 }], 'stairWall');   // 홀 | 남자화장실 (4·2층) / 3층 학생회실 문
@@ -3418,6 +3489,16 @@ function classChair(part) {
 }
 
 // ================= 정적 메시 합치기 =================
+// 같은 면에 겹친 재질끼리 번갈아 보이며 지직거리지 않게: 위에 덧붙인 재질일수록 깊이를 살짝 앞으로 당겨 항상 그쪽이 보이게 함
+const Z_PRIORITY = [
+  [/^stairWave/, 3],
+  [/^(corFloorDark|stairYellow|chalk|baseboard|doorFrame)/, 2],
+  [/^(teal|stairWall|stair$|wood|steelGrey|granite|wcPart|loungeFloor|lobbyFloor)/, 1],
+];
+for (const key of Object.keys(buckets)) {
+  const hit = Z_PRIORITY.find(([re]) => re.test(key));
+  if (hit && M[key] && !(M[key].polygonOffsetFactor < -hit[1])) Object.assign(M[key], { polygonOffset: true, polygonOffsetFactor: -hit[1], polygonOffsetUnits: -2 * hit[1] });
+}
 for (const [key, geos] of Object.entries(buckets)) {
   const mesh = new THREE.Mesh(mergeGeometries(geos), M[key]);
   mesh.castShadow = !NO_SHADOW.has(key);
@@ -3490,21 +3571,22 @@ let flashOn = true;
 
 
 // ================= 오디오 =================
-let actx = null;
+let actx = null, master = null;
 function initAudio() {
   if (actx) { actx.resume(); return; }
   actx = new AudioContext();
+  master = actx.createGain(); master.gain.value = OPTS.vol; master.connect(actx.destination);
   const len = actx.sampleRate * 4, buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
   let last = 0;
   for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
   const src = actx.createBufferSource(); src.buffer = buf; src.loop = true;
   const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
   const gn = actx.createGain(); gn.gain.value = 0.18;
-  src.connect(lp).connect(gn).connect(actx.destination); src.start();
+  src.connect(lp).connect(gn).connect(master); src.start();
   for (const f of [49, 51.3]) {
     const o = actx.createOscillator(); o.frequency.value = f;
     const og = actx.createGain(); og.gain.value = 0.015;
-    o.connect(og).connect(actx.destination); o.start();
+    o.connect(og).connect(master); o.start();
   }
 }
 function noiseBurst(dur, freq, vol, delay = 0) {
@@ -3514,7 +3596,7 @@ function noiseBurst(dur, freq, vol, delay = 0) {
   const s = actx.createBufferSource(); s.buffer = buf;
   const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 0.8;
   const g = actx.createGain(); g.gain.value = vol;
-  s.connect(bp).connect(g).connect(actx.destination); s.start(actx.currentTime + delay);
+  s.connect(bp).connect(g).connect(master); s.start(actx.currentTime + delay);
 }
 function creak() {
   if (!actx) return;
@@ -3524,7 +3606,7 @@ function creak() {
   const g = actx.createGain();
   o.frequency.setValueAtTime(65, t); o.frequency.linearRampToValueAtTime(105, t + 0.3); o.frequency.linearRampToValueAtTime(80, t + 0.7);
   g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.07, t + 0.06); g.gain.linearRampToValueAtTime(0, t + 0.7);
-  o.connect(f).connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.75);
+  o.connect(f).connect(g).connect(master); o.start(t); o.stop(t + 0.75);
 }
 const footstep = (run) => noiseBurst(0.09, 350 + Math.random() * 150, run ? 0.5 : 0.32);
 const clickSound = () => noiseBurst(0.025, 3000, 0.4);
@@ -3532,7 +3614,7 @@ function beep(freq = 1180, dur = 0.15) {
   if (!actx) return;
   const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
   o.frequency.value = freq; g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + 0.01);
+  o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.01);
 }
 const rattleSound = () => { for (let i = 0; i < 4; i++) noiseBurst(0.05, 900 + Math.random() * 400, 0.35, i * 0.07); };
 
@@ -3584,6 +3666,15 @@ function pickUp(it) {
     });
   }
   if (it.item.id === 'specimen') monologue(['호신용으로 쓸 수 있을 것 같다']);
+  if (it.item.id === 'shutterKey' && !exploreMode && (!story.keyEv || story.keyEv === 'quiet')) {
+    story.keyEv = 'gotKey';
+    monologue(['됐다 이제 나가자'], { onDone: () => setObjective('1층 셔터로 가십시오') });
+  }
+  if (it.item.id === 'soju' && !exploreMode && story.keyEv === 'gone') {
+    story.keyEv = 'armed';
+    monologue(['이거면 되겠다', '범인을 찾아서 뒤에서 몰래 내려치자'], { onDone: () => { setObjective('학생회실을 나가 범인을 찾으십시오'); autoSave(); } });
+  }
+  if (it.item.id === 'shutterKey' && !exploreMode && story.keyEv === 'ko') startQte();
   if (it.item.id === 'aiClubKey' && !exploreMode) monologue(['학부연구생이 두고간 모양이다'], { onDone: () => setTimeout(() => startRaid('lab'), 700) });
   if (it.item.id === 'cardkey' && !exploreMode) monologue(['과사무실 비상 카드키다…!', '정말 여기 떨어져 있었네'], { onDone: () => setTimeout(() => startRaid('ai'), 700) });
 }
@@ -3813,9 +3904,11 @@ class LookControls extends THREE.EventDispatcher {
 }
 const controls = new LookControls(camera, document.body);
 const overlay = document.getElementById('overlay');
-overlay.addEventListener('click', () => { initAudio(); controls.lock(); });
+overlay.addEventListener('pointerdown', () => initAudio());   // 아무 데나 누르면 소리 시작 (시작 화면 형광등 소리)
+document.getElementById('btnStart').addEventListener('click', (e) => { e.stopPropagation(); exitTitle(); initAudio(); controls.lock(); });
 controls.addEventListener('lock', () => {
   overlay.style.display = 'none';
+  settingsEl.style.display = 'none';
   document.getElementById('btnExplore').style.display = 'none';   // 게임을 시작하면 탐방 모드 버튼은 숨김
   document.getElementById('exploreNote').style.display = 'none';
   if (intro && intro.step < 0) startIntro();
@@ -3838,14 +3931,99 @@ function startExplore() {
   spawnDroppedCard();
   setObjective('탐방 모드 · 자유롭게 둘러보세요', false);
 }
-document.getElementById('btnExplore').addEventListener('click', (e) => { e.stopPropagation(); startExplore(); initAudio(); controls.lock(); });
+document.getElementById('btnExplore').addEventListener('click', (e) => { e.stopPropagation(); exitTitle(); startExplore(); initAudio(); controls.lock(); });
 controls.addEventListener('unlock', () => {
   if (uiOpen) return;   // 도어락 화면이 열려 있을 땐 일시정지 화면 안 띄움
   overlay.style.display = 'flex';
-  overlay.querySelector('.start').textContent = '클릭하여 계속';
+  overlay.classList.add('paused');
+  overlay.querySelector('.start').textContent = '계속하기';
 });
 
+// ================= 조작법 및 설정 (감도·음량·밝기, 브라우저에 저장) =================
+const OPTS = { sens: 1, vol: 1, bright: 1 };
+try { Object.assign(OPTS, JSON.parse(localStorage.getItem('gong2_opts') || '{}')); } catch (e) { /* 저장소 없음 */ }
+const settingsEl = document.getElementById('settings');
+function applyOpts() {
+  controls.sens = 0.0021 * OPTS.sens;
+  if (master) master.gain.value = OPTS.vol;
+  renderer.toneMappingExposure = 1.4 * OPTS.bright;
+  document.getElementById('vSens').textContent = OPTS.sens.toFixed(2);
+  document.getElementById('vVol').textContent = Math.round(OPTS.vol * 100) + '%';
+  document.getElementById('vBright').textContent = Math.round(OPTS.bright * 100) + '%';
+}
+for (const [id, k] of [['optSens', 'sens'], ['optVol', 'vol'], ['optBright', 'bright']]) {
+  const el = document.getElementById(id);
+  el.value = OPTS[k];
+  el.addEventListener('input', () => {
+    OPTS[k] = +el.value; applyOpts();
+    try { localStorage.setItem('gong2_opts', JSON.stringify(OPTS)); } catch (e) { /* 저장소 없음 */ }
+  });
+}
+applyOpts();
+document.getElementById('btnSettings').addEventListener('click', (e) => { e.stopPropagation(); settingsEl.style.display = 'flex'; });
+document.getElementById('btnSetClose').addEventListener('click', (e) => { e.stopPropagation(); settingsEl.style.display = 'none'; });
+
+// ================= 시작 화면 배경: 4층 복도 형광등이 깜빡이고, 꺼질 때마다 저 끝에 누군가 조금씩 가까이 서 있음 =================
+let titleMode = false;   // 아래 인트로 설정 뒤에 정함 (테스트용 주소면 끔)
+let titleSaved = null, titleLastV = 1;
+const TITLE_CAM = { x: 26, z: 1.45 };
+const TITLE_DIST = [24, 17, 11, 6];   // 꺼질 때마다 범인이 서 있는 거리
+const hash1 = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+function titleLevel(t) {   // 형광등 밝기 (9초 주기: 켜짐 → 지지직 → 꺼짐 → 지지직 → 켜짐)
+  const c = t % 9, r = hash1(Math.floor(t * 13));
+  if (c < 5.0) return r < 0.03 ? 0.35 : 1;
+  if (c < 6.0) return r < 0.5 ? 0 : r < 0.7 ? 0.5 : 1;
+  if (c < 7.4) return r < 0.06 ? 0.6 : 0;
+  if (c < 8.1) return r < 0.4 ? 1 : 0;
+  return 1;
+}
+function updateTitle(dt, t) {
+  if (qs.get('titleT')) t = +qs.get('titleT');   // 테스트용: 특정 순간 고정
+  if (!titleSaved) {
+    titleSaved = { cam: camera.position.clone(), q: camera.quaternion.clone(), cp: culprit.g.position.clone(), cr: culprit.g.rotation.clone(), cv: culprit.g.visible };
+    for (const r of ROOMS) r.mat.emissiveIntensity = 0;
+  }
+  const v = titleLevel(t), cr = corrRooms[3], y = 3 * FH;
+  if (v > 0.5 && titleLastV <= 0.5) noiseBurst(0.03, 2600, 0.05);   // 형광등 틱
+  if (v <= 0.5 && titleLastV > 0.5) noiseBurst(0.04, 900, 0.03);
+  titleLastV = v;
+  cr.mat.emissiveIntensity = 1.6 * v;
+  for (const m of corrFillMats[3]) { m.emissiveIntensity = 0.22 * v + 0.075 * (1 - v); m.emissive.setRGB(0.62 + 0.38 * v, 0.7 + 0.3 * v, 0.95 + 0.05 * v); }
+  const anchors = cr.anchors.slice().sort((a, b) => Math.abs(a.x - TITLE_CAM.x) - Math.abs(b.x - TITLE_CAM.x));
+  roomPool.forEach((l, i) => { const a = anchors[i]; l.position.set(a.x, a.y, a.z); l.intensity = ROOM_LIGHT * v * 0.85; });
+  flash.intensity = bounce.intensity = cFlash.intensity = 0;
+  scene.fog.density = 0.014 + 0.035 * (1 - v);
+  // 카메라: 복도 끝에서 반대편을 바라봄 (숨쉬듯 아주 조금 흔들림)
+  camera.position.set(TITLE_CAM.x, y + 1.55 + Math.sin(t * 1.1) * 0.012, TITLE_CAM.z);
+  camera.lookAt(TITLE_CAM.x - 20, y + 1.42 + Math.sin(t * 0.37) * 0.05, TITLE_CAM.z + Math.sin(t * 0.23) * 0.5);
+  // 범인: 지지직거리는 동안만 복도 저편에 서 있음 (주기마다 가까워짐)
+  const c = t % 9, k = Math.floor(t / 9) % TITLE_DIST.length, show = c > 5.4 && c < 8.1;
+  culprit.g.visible = show;
+  if (show) {
+    culprit.g.position.set(TITLE_CAM.x - TITLE_DIST[k], y, 1.35);
+    culprit.g.rotation.set(0, Math.PI / 2, 0);
+    glb.lastPos.copy(culprit.g.position);
+    if (k === TITLE_DIST.length - 1 && !titleSaved.stung && c > 5.4) { titleSaved.stung = true; heartbeat(0.5); }
+  } else if (c < 1) titleSaved.stung = false;
+  updateCulpritModel(dt);
+}
+function exitTitle() {
+  if (!titleMode) return;
+  titleMode = false;
+  document.body.classList.remove('menu-on');
+  if (titleSaved) {
+    camera.position.copy(titleSaved.cam); camera.quaternion.copy(titleSaved.q);
+    culprit.g.position.copy(titleSaved.cp); culprit.g.rotation.copy(titleSaved.cr); culprit.g.visible = titleSaved.cv;
+    glb.lastPos.copy(culprit.g.position);
+  }
+  if (intro) {   // 새 게임: 눈을 감은 상태(검은 화면)에서 인트로 시작
+    fadeEl.style.transition = 'none'; fadeEl.style.opacity = 1;
+    void fadeEl.offsetWidth; fadeEl.style.transition = '';
+  }
+}
+
 const keys = {};
+let crouch = false, crouchK = 0, eyeNow = EYE;   // 웅크리기 (C): 느리지만 발소리가 안 나고 뒤에서 들키지 않음
 addEventListener('keydown', (e) => {
   if (uiOpen && uiMode === 'end') return;
   if (uiOpen && uiMode === 'choice') {
@@ -3878,7 +4056,9 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (!controls.isLocked) return;
+  if (qte) { e.preventDefault(); qteKey(e.code); return; }
   if (e.code === 'Space') { e.preventDefault(); grabPress(); return; }
+  if (e.code === 'KeyC' && !intro && !hiding) { crouch = !crouch; if (crouch) showMsg('웅크렸다.  (C: 일어서기)', 1.6); }
   if (e.code === 'KeyF' && !intro) { flashOn = !flashOn; flashAuto = false; clickSound(); }
   if (e.code === 'KeyE') interact();
 });
@@ -3889,7 +4069,7 @@ addEventListener('mousedown', (e) => {
   else if (elevScene) advanceElev();
   else if (story.stage === 'peek') return;
   else if (mono) advanceMono();
-  else interact();
+  else if (!qte) interact();
 });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
@@ -3900,7 +4080,7 @@ let focused = null;
 function findFocus() {
   ray.setFromCamera(center, camera);
   const hit = ray.intersectObjects(interactables, false)
-    .find((h) => !(h.object.userData.it && h.object.userData.it.type === 'culprit' && (!culprit.g.visible || !ai.active))
+    .find((h) => !(h.object.userData.it && h.object.userData.it.type === 'culprit' && (!culprit.g.visible || !ai.active || ['ko', 'qte', 'stun'].includes(ai.state)))
       && !(h.object.userData.it && h.object.userData.it.type === 'bag' && !laptopSeen));   // 안 보이는 범인 판정은 무시
   return hit ? hit.object.userData.it : null;
 }
@@ -3924,13 +4104,13 @@ function promptFor(it) {
   if (it.type === 'exit') { const sh = shutters.find((x) => x.id === it.exitId); return (sh && sh.open > 0.9) || (it.exitId === 'west' && story.stage === 'home') ? '[클릭] 밖으로 나가기' : '[클릭] 문 열기'; }
   if (it.type === 'drawer') return it.opened ? '' : '[클릭] 서랍 열기';
   if (it.type === 'brokenBtn') return '[클릭] 개폐 버튼 누르기';
-  if (it.type === 'culprit') return culprit.g.visible && hasItem('specimen') && ai.active ? '[클릭] 공시체로 내려치기' : '';
+  if (it.type === 'culprit') return canStrike() ? '[클릭] 소주병으로 뒤통수 내려치기' : culprit.g.visible && hasItem('specimen') && ai.active && !['ko', 'qte', 'stun'].includes(ai.state) ? '[클릭] 공시체로 내려치기' : '';
   if (it.type === 'exhibit') return '[클릭] 문 열기';
   if (it.type === 'elevator') return '[클릭] 호출 버튼 누르기';
   return '';
 }
 function interact() {
-  if (intro || elevScene || ambushCam || binCam || tripCam || grab || escaped || escapedPending || dead || mono || story.stage === 'peek') return;
+  if (intro || elevScene || ambushCam || binCam || tripCam || grab || qte || escaped || escapedPending || dead || mono || story.stage === 'peek') return;
   if (hiding) {
     if (hiding.spot.main && (story.stage === 'search' || story.stage === 'gone')) { showMsg('…아직 밖에 있다. 조금만 더 기다리자.'); return; }
     exitHide(); return;
@@ -4050,6 +4230,7 @@ function interact() {
   } else if (it.type === 'shutter') {
     const sh = it.shutter;
     if (sh.target) return;
+    if (hasItem('shutterKey') && story.keyEv === 'flee') { rattleSound(); sayTimed('범인이 쫓아오고 있어… 셔터를 열 틈이 없다. 먼저 따돌려야 해!', 2600); return; }
     if (hasItem('shutterKey')) { sh.target = 1; noiseBurst(2.5, 200, 0.4); showMsg('열쇠로 셔터를 올렸다.'); }
     else { rattleSound(); noiseBurst(0.3, 150, 0.5); showMsg('셔터가 내려진 채 잠겨 있다. 셔터 열쇠가 필요하다.'); }
   } else if (it.type === 'elevator') {
@@ -4065,7 +4246,8 @@ function interact() {
     else if (it.exitId === 'west') { rattleSound(); showMsg('유리문이 꿈쩍도 하지 않는다. 옆의 개폐 버튼으로 열어야 할 것 같다.'); }
     else { rattleSound(); showMsg('잠겨 있다. 밖은 이미 어둡다.'); }
   } else if (it.type === 'culprit') {
-    if (culprit.g.visible && hasItem('specimen') && ai.active) badEnding();
+    if (canStrike()) strikeCulprit();
+    else if (culprit.g.visible && hasItem('specimen') && ai.active && !['ko', 'qte', 'stun'].includes(ai.state)) badEnding();
   } else if (it.type === 'brokenBtn' && exploreMode) {
     beep(260, 0.3); showMsg('탐방 모드 — 밖으로 나가지는 않는다.');
   } else if (it.type === 'brokenBtn') {
@@ -4087,18 +4269,23 @@ function openDrawer(it) {
     it.drawer.target = 1;
     removeSparkle(it.spark);
     noiseBurst(0.3, 500, 0.3);
-    const key = new THREE.Group();
-    const keyMat = std({ color: 0xc9a43a, roughness: 0.3, metalness: 0.8 });
-    const bow = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.005, 6, 14), keyMat);
-    bow.rotation.x = Math.PI / 2;
-    const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.005, 0.06), keyMat);
-    shaft.position.z = 0.045;
-    const tag = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.002, 0.045), std({ color: 0xe8e2c8, roughness: 0.9 }));
-    tag.position.set(0.03, 0, -0.03);
-    key.add(bow, shaft, tag);
+    const key = makeShutterKeyMesh();
     key.position.set(...it.keyPos); key.rotation.y = 0.6;
     placeItem(key, { id: 'shutterKey', name: '셔터 열쇠', icon: '🔑', desc: '"1층 출입문 셔터" 꼬리표가 달린 열쇠.' }, 0.25);
   }
+}
+
+function makeShutterKeyMesh() {   // 셔터 열쇠 (꼬리표 달림)
+  const key = new THREE.Group();
+  const keyMat = std({ color: 0xc9a43a, roughness: 0.3, metalness: 0.8 });
+  const bow = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.005, 6, 14), keyMat);
+  bow.rotation.x = Math.PI / 2;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.005, 0.06), keyMat);
+  shaft.position.z = 0.045;
+  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.002, 0.045), std({ color: 0xe8e2c8, roughness: 0.9 }));
+  tag.position.set(0.03, 0, -0.03);
+  key.add(bow, shaft, tag);
+  return key;
 }
 
 // ================= 이동 / 충돌 =================
@@ -4128,6 +4315,8 @@ if (intro) {
   camera.lookAt(4.3, 3 * FH + 0.85, -0.8);
   fadeEl.style.opacity = 1;
 }
+titleMode = !qs.get('t') && !qs.get('shot') && !qs.get('pos') && !qs.get('hide');
+if (titleMode) { document.body.classList.add('menu-on'); fadeEl.style.opacity = 0; }   // 시작 화면: 검은 화면에서 서서히 복도가 보임
 function say(text) { dlgText.textContent = text; dialogEl.style.display = 'block'; }
 const disclaimerEl = document.getElementById('disclaimer');
 function startIntro() {
@@ -4248,7 +4437,7 @@ function sting() {
   for (const f of [233, 247, 311, 349]) {
     const o = actx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
     const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 1.7);
+    o.connect(g).connect(master); o.start(t); o.stop(t + 1.7);
   }
   noiseBurst(0.5, 120, 0.7);
 }
@@ -4267,7 +4456,7 @@ function culpritVoice(kind) {
     o.frequency.setValueAtTime(125, t); o.frequency.linearRampToValueAtTime(118, t + 0.2); o.frequency.linearRampToValueAtTime(170, t + 0.48);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16 * v, t + 0.05);
     g.gain.setValueAtTime(0.16 * v, t + 0.36); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    o.connect(f).connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.6);
+    o.connect(f).connect(g).connect(master); o.start(t); o.stop(t + 0.6);
     return;
   }
   const tune = WHISTLE_TUNES[(Math.random() * WHISTLE_TUNES.length) | 0];   // 휘파람
@@ -4285,7 +4474,7 @@ function culpritVoice(kind) {
     tt += dur;
   }
   g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.08);
-  o.connect(g).connect(actx.destination);
+  o.connect(g).connect(master);
   o.start(t); lfo.start(t); o.stop(tt + 0.1); lfo.stop(tt + 0.1);
 }
 function heartbeat(vol) { noiseBurst(0.12, 55, vol); noiseBurst(0.1, 50, vol * 0.7, 0.2); }
@@ -4666,6 +4855,7 @@ function updateStory(dt, t) {
     && !['chase', 'getHidden', 'turn', 'recover', 'raid', 'raidEnter', 'raidLap', 'trip'].includes(ai.state)) compLurk();   // 404호 앞에서 대기
   if (story.comp === 'toComp' && ai.active && !hiding && !mono && Math.abs(player.feet - 3 * FH) < 0.3 && player.z > -0.25 && player.z < 2.3)
     compAmbush(Math.abs(player.x) < 3 ? 'mid' : 'side');   // 방화문을 지나 복도에 완전히 들어선 뒤
+  updateKeyEvent(dt);
   // 추격 중 범인이 408호 앞 안내판에 걸려 넘어짐
   if (SIGN.up && story.comp === 'ambush' && ai.state === 'chase' && culprit.g.visible) {
     const cp = culprit.g.position;
@@ -4692,6 +4882,288 @@ function updateStory(dt, t) {
       monologue(['…갔나?', '이걸 못봐?'], { onDone: callPolice });
     }
   }
+}
+
+// ================= 셔터 열쇠 이벤트 =================
+// quiet(409호를 나가면 범인 사라짐) → gotKey(열쇠 획득) → chase(과사무실을 나서면 범인이 뛰어옴)
+// → dropped(3층 중앙 복도에서 열쇠를 떨어뜨림) → lost(따돌린 뒤 알아챔) → gone(돌아와 보니 열쇠가 없음)
+let droppedKey = null;
+const _kv = new THREE.Vector3();
+function keyEventStartChase() {
+  const visible = culprit.g.visible && ai.active && Math.abs(culprit.g.position.y - player.feet) < 2
+    && losClear(culprit.g.position.x, culprit.g.position.z, player.x, player.z, player.feet + 1.5);
+  if (!ai.active) startRoaming();
+  if (!visible) {   // 복도 저쪽(오른쪽 = 서쪽 끝)에서 나타남
+    culprit.g.position.set(-24, 2 * FH, 1.4);
+    culprit.g.rotation.set(0, Math.PI / 2, 0);
+  }
+  culprit.g.visible = true;
+  ai.state = 'chase'; ai.path = null; ai.boostT = 7; ai.lostT = 0; ai.hitCD = 1.0; ai.sawHide = null;
+  ai.lastSeen = { x: player.x, y: player.feet, z: player.z };
+  sting();
+  if (!flashOn) { flashOn = true; flashAuto = false; }
+  lookCam = { t: 0, k: 16, hold: 1.7, ret: 0.5, fn: () => culprit.head.getWorldPosition(_kv), back: camera.quaternion.clone(),
+    onEnd: () => sayTimed('도망쳐야 해!', 1800) };
+  setObjective('범인을 따돌리십시오', false);
+}
+function dropShutterKey() {
+  const i = inventory.findIndex((it) => it.id === 'shutterKey');
+  if (i >= 0) { inventory.splice(i, 1); renderInventory(); }
+  const sp = Math.hypot(vel.x, vel.z), bx = sp > 0.1 ? -vel.x / sp : 0, bz = sp > 0.1 ? -vel.z / sp : -1;   // 지나온 쪽 바닥
+  const key = makeShutterKeyMesh();
+  key.position.set(player.x + bx * 0.9, player.feet + 0.006, Math.min(2.8, Math.max(0.2, player.z + bz * 0.9)));
+  key.rotation.y = Math.random() * 6;
+  key.scale.setScalar(1.6);
+  scene.add(key);
+  const spark = addSparkle(new THREE.Vector3(key.position.x, key.position.y + 0.05, key.position.z), 0.2);
+  droppedKey = { mesh: key, spark };
+  story.keyDrop = { x: key.position.x, y: player.feet, z: key.position.z };
+  noiseBurst(0.05, 3400, 0.5); noiseBurst(0.05, 2800, 0.4, 0.09); noiseBurst(0.04, 3800, 0.3, 0.2);   // 짤랑
+  if (!flashOn) { flashOn = true; flashAuto = false; }
+  lookCam = { t: 0, k: 14, hold: 0.9, ret: 0.35, target: key.position.clone(), back: camera.quaternion.clone() };
+  sayTimed('앗…! 열쇠가…', 1600);
+}
+function removeDroppedKey() {
+  if (!droppedKey) return;
+  scene.remove(droppedKey.mesh); removeSparkle(droppedKey.spark);
+  droppedKey = null;
+}
+function updateKeyEvent() {
+  if (exploreMode || dead) return;
+  const ev = story.keyEv, on3 = Math.abs(player.feet - 2 * FH) < 0.3;
+  // 409호 수색이 끝난 뒤 복도로 나오면: 범인은 사라지고 셔터 열쇠를 얻을 때까지 안 나옴
+  if (!ev && story.aiRaidDone && Math.abs(player.feet - 3 * FH) < 0.3 && player.z > 0.1 && ai.state !== 'chase' && ai.state !== 'getHidden') {
+    story.keyEv = 'quiet';
+    if (ai.active) { ai.state = 'leave'; ai.path = null; aiGoTo(6.75, 2 * FH, 4); }
+    return;
+  }
+  // 열쇠를 들고 과사무실 문을 나서면 → 오른쪽으로 고개가 돌아가고 범인이 뛰어옴
+  if (ev === 'gotKey' && on3 && !mono && !hiding && player.z > 0.35 && Math.abs(player.x - (-4.2)) < 1.6) {
+    story.keyEv = 'chase';
+    keyEventStartChase();
+    return;
+  }
+  // 도망치다 3층 가운데 복도에서 열쇠를 떨어뜨림
+  if (ev === 'chase' && on3 && !lookCam && player.x > -2.5 && player.x < 4.4 && player.z > 0 && player.z < 3.0) {
+    story.keyEv = 'dropped';
+    dropShutterKey();
+    return;
+  }
+  // 범인이 떨어진 열쇠 위를 지나가면 주워 감
+  if (droppedKey && culprit.g.visible && Math.abs(culprit.g.position.y - story.keyDrop.y) < 1
+    && Math.hypot(culprit.g.position.x - story.keyDrop.x, culprit.g.position.z - story.keyDrop.z) < 0.9) removeDroppedKey();
+  // 따돌리면 열쇠를 떨어뜨린 걸 알아챔
+  if (ev === 'dropped' && !mono && !lookCam && ai.boostT <= 0 && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'grab'].includes(ai.state)) {
+    story.keyEv = 'lost';
+    monologue(['도망치던 중 열쇠를 떨어뜨렸다', '다시 찾으러 가야 해'], { onDone: () => setObjective('3층 가운데 복도에서 열쇠를 찾으십시오') });
+    return;
+  }
+  if (ev === 'lost' && droppedKey) {   // 플레이어가 안 보는 사이 범인이 가져감
+    const k = story.keyDrop;
+    if (Math.abs(player.feet - k.y) > 1 || Math.hypot(player.x - k.x, player.z - k.z) > 6 || !losClear(player.x, player.z, k.x, k.z, k.y + 1.0)) removeDroppedKey();
+  }
+  // 돌아와 보니 열쇠가 없음
+  if (ev === 'lost' && !droppedKey && !mono && story.keyDrop && Math.abs(player.feet - story.keyDrop.y) < 0.3
+    && Math.hypot(player.x - story.keyDrop.x, player.z - story.keyDrop.z) < 2.5) {
+    story.keyEv = 'gone';
+    if (ai.active && !['chase', 'getHidden', 'turn', 'grab', 'recover', 'trip'].includes(ai.state)) { ai.state = 'leave'; ai.path = null; aiGoTo(-30, 2 * FH, 1.2); }
+    monologue(['열쇠가 없다', '범인이 들고 간 모양이다', '되찾아야 해'], { onDone: lookAtCouncil });
+    return;
+  }
+  // 소주병을 들고 학생회실을 나서면 → 범인이 등을 돌린 채 3층 복도를 돌아다님
+  if (ev === 'armed' && on3 && !mono && !hiding && hasItem('soju') && player.z < HALL.z1 - 0.25 && Math.abs(player.x) < 4.4) {
+    story.keyEv = 'stalk';
+    if (!ai.active) startRoaming();
+    culprit.g.visible = true;
+    culprit.g.position.set(-14, 2 * FH, 1.2);
+    culprit.g.rotation.set(0, -Math.PI / 2, 0);
+    ai.state = 'stalk'; ai.path = null; ai.waitT = 0; ai.boostT = 0; ai.lostT = 0; ai.sawHide = null;
+    return;
+  }
+  // 범인을 발견함 → 멈춰 서서 등을 보인 채 서 있음
+  if (ev === 'stalk' && ai.state === 'stalk' && !mono && culpritOnScreen(24)) {
+    story.keyEv = 'stalkSeen';
+    ai.path = null; ai.waitT = 99;
+    monologue(['저기 있다…', '아직 나를 못 본 것 같아', '웅크린 채로(C) 뒤로 몰래 다가가자'], { onDone: () => setObjective('웅크린 채(C) 범인 뒤로 다가가 소주병으로 내려치십시오') });
+    return;
+  }
+  // 들켜서 쫓기다 따돌리면 다시 처음처럼 등을 돌리고 돌아다님
+  if ((ev === 'stalk' || ev === 'stalkSeen') && ai.active && ai.boostT <= 0 && ['patrol', 'search', 'investigate'].includes(ai.state) && !culpritOnScreen(40)) {
+    story.keyEv = 'stalk';
+    ai.state = 'stalk'; ai.path = null; ai.waitT = 0;
+    sayTimed('따돌렸다… 다시 몰래 다가가야 해', 2400);
+    return;
+  }
+  // 걷어차고 도망친 뒤 따돌리면 그때 셔터를 열 수 있음
+  if (ev === 'flee' && !mono && ai.boostT <= 0 && !['chase', 'getHidden', 'turn', 'recover', 'trip', 'grab', 'stun'].includes(ai.state)) {
+    story.keyEv = 'escaped';
+    monologue(['…따돌린 것 같다', '이제 1층 셔터로 가자'], { onDone: () => { setObjective('1층 셔터를 열고 탈출하십시오'); autoSave(); } });
+  }
+}
+function lookAtCouncil() {   // 학생회실 쪽을 돌아봄 → "무기가 될 만한 걸 챙기자"
+  if (navDoorRefs.council) navDoorRefs.council.locked = false;
+  spawnSoju();
+  const tgt = new THREE.Vector3(0, 2 * FH + 1.3, HALL.z1);
+  _m4.lookAt(camera.position, tgt, camera.up);
+  lookCam = { t: 0, k: 6, hold: 1.6, ret: 0.01, target: tgt, back: new THREE.Quaternion().setFromRotationMatrix(_m4),
+    onEnd: () => { setObjective('학생회실에서 무기가 될 만한 것을 챙기십시오'); autoSave(); } };
+  sayTimed('일단 무기가 될 만한 걸 챙기자', 2600);
+}
+function spawnSoju() {   // 학생회실 테이블 위 소주병 (주울 수 있음)
+  if (picked.has('soju') || placedItems.soju) return;
+  const b = makeSojuMesh();
+  b.position.set(-1.95, 2 * FH + 0.72, 9.95);
+  placeItem(b, { id: 'soju', name: '소주병', icon: '🍾', desc: '학생회실 테이블 위에 있던 빈 소주병. 묵직하다.' }, 0.32);
+}
+function makeSojuMesh() {
+  const g = new THREE.Group(), m = M.sojuGreen || std({ color: 0x2f8f4f, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.85 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.16, 12), m); body.position.y = 0.08;
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.036, 0.05, 12), m); sh.position.y = 0.185;
+  const nk = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.05, 10), m); nk.position.y = 0.235;
+  const lb = new THREE.Mesh(new THREE.CylinderGeometry(0.0365, 0.0365, 0.06, 12), std({ color: 0xe8efe8, roughness: 0.6 })); lb.position.y = 0.08;
+  g.add(body, sh, nk, lb);
+  return g;
+}
+function culpritOnScreen(maxD) {   // 플레이어 화면에 범인이 보이는지
+  if (!culprit.g.visible) return false;
+  const p = culprit.g.position;
+  if (Math.abs(p.y - player.feet) > 2 || Math.hypot(p.x - player.x, p.z - player.z) > maxD) return false;
+  if (!losClear(player.x, player.z, p.x, p.z, p.y + 1.4)) return false;
+  culprit.head.getWorldPosition(_kv).project(camera);
+  return _kv.z < 1 && Math.abs(_kv.x) < 0.85 && Math.abs(_kv.y) < 0.95;
+}
+function stalkNext() {   // 플레이어 반대쪽 복도로 몇 걸음 걸어감
+  const pos = culprit.g.position, n = Math.max(0, Math.min(3, Math.round(pos.y / FH)));
+  const dir = Math.sign(pos.x - player.x) || 1;
+  const tx = Math.max(-34, Math.min(34, pos.x + dir * (5 + Math.random() * 4)));
+  if (Math.abs(tx - pos.x) < 2 || pos.z < 0 || pos.z > CW) { ai.waitT = 3 + Math.random() * 3; if (pos.z >= 0 && pos.z <= CW) return; }
+  const nd = nav.nodes[corrAt(n, tx)];
+  if (!aiGoTo(nd.x, nd.y, nd.z)) ai.waitT = 2;
+}
+function canStrike() {   // 범인 등 뒤 가까이에서만
+  if (!['stalk', 'stalkSeen'].includes(story.keyEv) || ai.state !== 'stalk' || !hasItem('soju') || !culprit.g.visible) return false;
+  const p = culprit.g.position, d = Math.hypot(player.x - p.x, player.z - p.z);
+  if (d > 2.3 || Math.abs(p.y - player.feet) > 1) return false;
+  const yaw = culprit.g.rotation.y;
+  return (Math.sin(yaw) * (player.x - p.x) + Math.cos(yaw) * (player.z - p.z)) / (d || 1) < -0.25;
+}
+function culpritYell() {   // "악!"
+  if (!actx) return;
+  const t = actx.currentTime, o = actx.createOscillator(), f = actx.createBiquadFilter(), g = actx.createGain();
+  o.type = 'sawtooth'; f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 1.2;
+  o.frequency.setValueAtTime(330, t); o.frequency.linearRampToValueAtTime(360, t + 0.08); o.frequency.exponentialRampToValueAtTime(170, t + 0.42);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.03); g.gain.setValueAtTime(0.5, t + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+  o.connect(f).connect(g).connect(master); o.start(t); o.stop(t + 0.55);
+}
+function strikeCulprit() {
+  story.keyEv = 'ko';
+  crouch = false;
+  const i = inventory.findIndex((it) => it.id === 'soju');
+  if (i >= 0) { inventory.splice(i, 1); renderInventory(); }   // 병은 깨짐
+  noiseBurst(0.08, 300, 0.9); noiseBurst(0.12, 4200, 0.6, 0.02); noiseBurst(0.18, 3000, 0.45, 0.07); noiseBurst(0.1, 5200, 0.3, 0.16);   // 퍽 + 쨍그랑
+  culpritYell();
+  shakeT = 0.35;
+  ai.state = 'ko'; ai.koT = 0; ai.koThud = false; ai.path = null;
+  culprit.g.rotation.order = 'YXZ';
+  sayTimed('범인: "악!"', 1500);
+}
+function dropKoKey() {   // 쓰러진 범인 옆에 셔터 열쇠가 떨어짐
+  const p = culprit.g.position, yaw = culprit.g.rotation.y, fx = Math.sin(yaw), fz = Math.cos(yaw);
+  const key = makeShutterKeyMesh();
+  _cpush.x = p.x + fx * 0.8 + fz * 0.6; _cpush.z = p.z + fz * 0.8 - fx * 0.6;
+  resolveCollisions(_cpush, p.y);
+  key.position.set(_cpush.x, p.y + 0.006, _cpush.z);
+  key.rotation.y = Math.random() * 6;
+  key.scale.setScalar(1.6);
+  placeItem(key, { id: 'shutterKey', name: '셔터 열쇠', icon: '🔑', desc: '"1층 출입문 셔터" 꼬리표가 달린 열쇠.' }, 0.4);
+  noiseBurst(0.05, 3400, 0.5, 0.1); noiseBurst(0.05, 2800, 0.4, 0.19);   // 짤랑
+  setTimeout(() => { if (story.keyEv === 'ko') sayTimed('열쇠가 떨어졌다…! 지금 주워야 해', 2400); }, 900);
+  setObjective('떨어진 셔터 열쇠를 주우십시오', false);
+}
+
+// 열쇠를 줍자마자 범인이 일어나 공격: 정해진 키를 눌러 3번 피하고, SPACE 로 걷어참
+let qte = null;
+const QTE_SEQ = [
+  { code: 'KeyA', key: 'A', dir: -1, txt: '← 왼쪽으로 피하세요!', win: 1.5 },
+  { code: 'KeyD', key: 'D', dir: 1, txt: '오른쪽으로 피하세요! →', win: 1.3 },
+  { code: 'KeyS', key: 'S', dir: 0, txt: '↓ 몸을 숙이세요!', win: 1.2 },
+];
+const _qr = new THREE.Vector3();
+function startQte() {
+  story.keyEv = 'qte';
+  crouch = false;
+  ai.state = 'qte'; ai.path = null;
+  culprit.g.rotation.order = 'YXZ';
+  qte = { phase: 'rise', t: 0, i: 0, dodge: 0, dodgeDir: 0, win: 1 };
+  sting(); noiseBurst(0.3, 300, 0.7);
+  sayTimed('…!!', 1000);
+}
+function qtePrompt(big, txt) {
+  warnEl.textContent = txt; warnEl.style.opacity = 1;
+  countEl.style.fontSize = '72px'; countEl.textContent = big;
+}
+function endQteUI() { warnEl.style.opacity = 0; countEl.textContent = ''; countEl.style.fontSize = ''; }
+function nextQte() {
+  qte.t = 0;
+  if (qte.i < QTE_SEQ.length) {
+    const s = QTE_SEQ[qte.i];
+    qte.phase = 'wind'; qte.win = s.win;
+    qtePrompt(s.key, s.txt);
+    beep(880, 0.12);
+  } else {
+    qte.phase = 'kick'; qte.win = 1.8;
+    qtePrompt('SPACE', '지금이야! 걷어차세요!');
+    beep(1100, 0.15);
+  }
+}
+function qteKey(code) {
+  if (!qte) return;
+  if (qte.phase === 'wind') {
+    const s = QTE_SEQ[qte.i];
+    if (code === s.code) {   // 피함 → 망치가 빗나감
+      qte.phase = 'swing'; qte.t = 0; qte.dodge = 0.55; qte.dodgeDir = s.dir; qte.i++;
+      endQteUI();
+      noiseBurst(0.22, 700, 0.5); noiseBurst(0.12, 1500, 0.25, 0.05);   // 휙
+    } else if (['KeyA', 'KeyD', 'KeyS', 'KeyW', 'Space'].includes(code)) qteFail();
+  } else if (qte.phase === 'kick') {
+    if (code === 'Space') kickCulprit();
+    else if (['KeyA', 'KeyD', 'KeyS', 'KeyW'].includes(code)) qteFail();
+  }
+}
+function updateQte(dt) {
+  const q = qte;
+  q.t += dt;
+  q.dodge = Math.max(0, q.dodge - dt);
+  const dk = q.dodge > 0 ? Math.sin((1 - q.dodge / 0.55) * Math.PI) : 0;
+  _qr.set(1, 0, 0).applyQuaternion(camera.quaternion); _qr.y = 0; _qr.normalize();
+  camera.position.set(player.x, player.feet + eyeNow, player.z).addScaledVector(_qr, dk * 0.55 * q.dodgeDir);
+  if (q.dodgeDir === 0) camera.position.y -= dk * 0.6;   // 숙이기
+  culprit.head.getWorldPosition(_head);
+  _m4.lookAt(camera.position, _head, camera.up);
+  _q4.setFromRotationMatrix(_m4);
+  camera.quaternion.slerp(_q4, 1 - Math.exp(-dt * 8));
+  if (q.phase === 'rise') { if (q.t > 1.0) nextQte(); }
+  else if (q.phase === 'swing') { if (q.t > 0.6) nextQte(); }
+  else if (q.t > q.win) qteFail();   // 제때 못 누름 → 맞음
+}
+function qteFail() {
+  endQteUI();
+  qte = null;
+  hp = 0;
+  noiseBurst(0.25, 120, 1.0); noiseBurst(0.12, 900, 0.6, 0.02);
+  hurtEl.style.opacity = 1; shakeT = 0.5;
+  gameOver();
+}
+function kickCulprit() {
+  endQteUI();
+  qte = null;
+  story.keyEv = 'flee';
+  noiseBurst(0.2, 110, 1.0); noiseBurst(0.1, 600, 0.5, 0.03);
+  shakeT = 0.3;
+  culprit.g.rotation.y = Math.atan2(player.x - culprit.g.position.x, player.z - culprit.g.position.z);
+  ai.state = 'stun'; ai.stunT = 0; ai.koThud = false; ai.path = null;
+  sayTimed('지금이야, 도망쳐!', 2000);
+  setObjective('범인을 따돌리십시오 — 그 전엔 셔터를 열 틈이 없다', false);
 }
 
 // ================= 범인 AI: 첫 추격 이후 건물을 돌아다니며 플레이어를 찾음 =================
@@ -5038,13 +5510,13 @@ function perceive() {
   const yaw = culprit.g.rotation.y, fx = Math.sin(yaw), fz = Math.cos(yaw);
   const toX = (player.x - p.x) / (d || 1), toZ = (player.z - p.z) / (d || 1);
   let inView = fx * toX + fz * toZ >= 0.0;   // 시야각 약 180도
-  if (!inView && flashOn && !lit && d < 22) {   // 플레이어 손전등 불빛이 이쪽을 비추면 등 뒤여도 알아챔
+  if (!inView && flashOn && !lit && d < 22 && ai.state !== 'stalk') {   // 플레이어 손전등 불빛이 이쪽을 비추면 등 뒤여도 알아챔
     camera.getWorldDirection(_pfd);
     if ((_pfd.x * -toX + _pfd.z * -toZ) / (Math.hypot(_pfd.x, _pfd.z) || 1) > 0.85) inView = true;
   }
   if (!inView) {   // 시야각 밖: 뒤에 너무 붙으면 기척(발소리)으로 눈치챔
     const runningP = Math.hypot(vel.x, vel.z) > 3;
-    const range = (runningP ? 9 : 5.5) * (lit || ai.boostT > 0 ? 1 : 0.65);
+    const range = crouch && !runningP ? 1.1 : ai.state === 'stalk' && !runningP ? 4.5 : (runningP ? 9 : 5.5) * (lit || ai.boostT > 0 ? 1 : 0.65);
     if (d > range) { ai.suspT = Math.max(0, (ai.suspT || 0) - 0.15); return false; }
     if (!losClear(p.x, p.z, player.x, player.z, Math.max(p.y, player.feet) + 1.45)) return false;
     ai.suspT = (ai.suspT || 0) + (d < 2.2 || runningP ? 0.3 : 0.15);
@@ -5084,7 +5556,7 @@ function updateAI(dt, t) {
   ai.percT -= dt;
   if (ai.percT <= 0) {
     ai.percT = 0.15;
-    const saw = (ai.state === 'raid' || ai.state === 'lurk' || ai.state === 'trip' || ai.state === 'grab') ? false : perceive();   // 이벤트 중 복도에선 못 봄
+    const saw = ['raid', 'lurk', 'trip', 'grab', 'leave', 'ko', 'qte', 'stun'].includes(ai.state) ? false : perceive();   // 이벤트 중 복도에선 못 봄
     if (saw) {
       ai.lastSeen = { x: player.x, y: player.feet, z: player.z };
       ai.lostT = 0;
@@ -5100,7 +5572,7 @@ function updateAI(dt, t) {
       const sameFloor = pd.dy < 2, inRoom = player.z < -0.25 || player.z > 3.2;
       let heard = false;
       if (spd > 3) heard = sameFloor ? pd.d < 45 : pd.d < 70;
-      else if (spd > 0.6) heard = sameFloor && pd.d < (inRoom ? 14 : 8);
+      else if (spd > 0.6 && !crouch) heard = sameFloor && pd.d < (inRoom ? 14 : 8);
       if (heard && t - (ai.heardT ?? -9) > 1.2) {
         if (ai.state !== 'investigate') culpritVoice('hmm');
         ai.heardT = t;
@@ -5142,6 +5614,72 @@ function updateAI(dt, t) {
     if (ai.waitT <= 0) { ai.state = 'chase'; ai.lastSeen = { x: player.x, y: player.feet, z: player.z }; ai.path = null; }
     return;
   }
+  if (ai.state === 'leave') {   // 409호 수색 후: 멀어지다가 플레이어 시야에서 벗어나면 사라짐
+    const done = aiFollow(2.2, dt);
+    const seen = Math.abs(pos.y - player.feet) < 2 && Math.hypot(pos.x - player.x, pos.z - player.z) < 16 && losClear(pos.x, pos.z, player.x, player.z, pos.y + 1.5);
+    if (done || !seen) { culprit.g.visible = false; ai.active = false; ai.state = 'patrol'; ai.path = null; }
+    return;
+  }
+  if (ai.state === 'stalk') {   // 셔터 열쇠를 든 채 플레이어를 등지고 돌아다님 (뒤로 몰래 다가가 내려칠 수 있음)
+    if (Math.hypot(vel.x, vel.z) > 3 && dy < 2 && d < 25) {   // 뛰는 발소리 → 돌아봄
+      ai.state = 'turn'; ai.waitT = 0.55; ai.path = null; sting(); return;
+    }
+    if (ai.path && aiFollow(1.0, dt)) { ai.path = null; ai.waitT = 2 + Math.random() * 2.5; }
+    if (ai.path) return;
+    aiIdleAnim();
+    if (d > 5) {   // 등이 플레이어 쪽을 향하게 천천히 돌아섬 (가까이 붙었을 땐 그대로)
+      const away = Math.atan2(pos.x - player.x, pos.z - player.z);
+      const dA = Math.atan2(Math.sin(away - culprit.g.rotation.y), Math.cos(away - culprit.g.rotation.y));
+      culprit.g.rotation.y += Math.max(-dt * 0.8, Math.min(dt * 0.8, dA));
+    }
+    if ((ai.waitT -= dt) <= 0 && story.keyEv === 'stalk' && d > 8) stalkNext();   // 발견되기 전엔 멀어지듯 돌아다님
+    return;
+  }
+  if (ai.state === 'ko') {   // 소주병에 뒤통수를 맞고 앞으로 쓰러짐 (열쇠를 주울 때까지 못 일어남)
+    ai.koT += dt;
+    const k = ai.koT, yaw = culprit.g.rotation.y;
+    culprit.g.rotation.x = 1.45 * Math.min(1, k / 0.5) ** 2;
+    if (k < 0.5) { pos.x += Math.sin(yaw) * dt * 1.0; pos.z += Math.cos(yaw) * dt * 1.0; }
+    if (k > 0.5 && !ai.koThud) { ai.koThud = true; noiseBurst(0.25, 90, 1.0); noiseBurst(0.12, 400, 0.5, 0.05); dropKoKey(); }
+    aiIdleAnim();
+    return;
+  }
+  if (ai.state === 'qte') {   // 벌떡 일어나 플레이어에게 망치를 휘두름
+    aiIdleAnim();
+    const want = Math.atan2(player.x - pos.x, player.z - pos.z);
+    const dA = Math.atan2(Math.sin(want - culprit.g.rotation.y), Math.cos(want - culprit.g.rotation.y));
+    culprit.g.rotation.y += dA * Math.min(1, dt * 7);
+    if (qte && qte.phase === 'rise') {
+      culprit.g.rotation.x = 1.45 * Math.max(0, 1 - qte.t / 0.7);
+      if (d < 1.3) {   // 너무 붙어 있으면 한 걸음 물러섬
+        const l = d || 1;
+        _cpush.x = pos.x + (pos.x - player.x) / l * dt * 2; _cpush.z = pos.z + (pos.z - player.z) / l * dt * 2;
+        resolveCollisions(_cpush, pos.y, true); pos.x = _cpush.x; pos.z = _cpush.z;
+      }
+    } else {
+      culprit.g.rotation.x = 0;
+      if (qte && (qte.phase === 'wind' || (qte.phase === 'swing' && qte.t < 0.4))) { glb.smash = true; culprit.armR.rotation.x = qte.phase === 'wind' ? -2.6 : -0.3; }
+    }
+    return;
+  }
+  if (ai.state === 'stun') {   // 걷어차여 뒤로 나자빠졌다가 일어나서 다시 쫓아옴
+    ai.stunT += dt;
+    const k = ai.stunT, yaw = culprit.g.rotation.y;
+    culprit.g.rotation.x = k < 0.35 ? -1.45 * (k / 0.35) : k < 2.9 ? -1.45 : k < 3.7 ? -1.45 * (1 - (k - 2.9) / 0.8) : 0;
+    if (k < 0.35) {
+      _cpush.x = pos.x - Math.sin(yaw) * dt * 4; _cpush.z = pos.z - Math.cos(yaw) * dt * 4;
+      resolveCollisions(_cpush, pos.y, true); pos.x = _cpush.x; pos.z = _cpush.z;
+    }
+    if (k > 0.35 && !ai.koThud) { ai.koThud = true; soundAt(pos.x, pos.y, pos.z, (v) => { noiseBurst(0.25, 90, 1.0 * v); noiseBurst(0.12, 400, 0.5 * v, 0.05); }); }
+    aiIdleAnim();
+    if (k >= 3.7) {
+      culprit.g.rotation.x = 0; ai.koThud = false;
+      ai.state = 'chase'; ai.boostT = 8; ai.path = null; ai.lostT = 0; ai.hitCD = 0.5;
+      ai.lastSeen = { x: player.x, y: player.feet, z: player.z };
+      sting();
+    }
+    return;
+  }
   if (ai.state === 'raid') {   // 카운트다운 동안 설계지원실 문 앞으로 다가옴
     raid.t -= dt;
     const sec = Math.ceil(raid.t);
@@ -5177,6 +5715,7 @@ function updateAI(dt, t) {
     }
     const rc = ai.raidCfg, wp = (rc.lap || RAID_LAP)[ai.lapIdx];
     if (!wp) {   // 다 둘러봄 → 복도로 나가서 다시 배회
+      if (rc === RAIDS.ai) story.aiRaidDone = true;
       ai.state = 'patrol'; ai.waitT = 0;
       aiGoTo(rc.exit[0], rc.y, rc.exit[1]);
       return;
@@ -5663,6 +6202,8 @@ function update(dt, t) {
     camera.updateProjectionMatrix();
   }
 
+  crouchK += ((crouch ? 1 : 0) - crouchK) * Math.min(1, dt * 8);
+  eyeNow = EYE - (EYE - CROUCH_EYE) * crouchK;
   if (dead) {   // 잡힘: 범인을 바라봄
     vel.set(0, 0, 0); bobAmt = 0;
     culprit.head.getWorldPosition(_head);
@@ -5675,16 +6216,19 @@ function update(dt, t) {
     updatePeek(dt);
   } else if (grab) {   // 붙잡힘: 범인을 바라보며 버둥거림
     vel.set(0, 0, 0); bobAmt = 0;
-    camera.position.set(player.x + (Math.random() - 0.5) * 0.04, player.feet + EYE, player.z + (Math.random() - 0.5) * 0.04);
+    camera.position.set(player.x + (Math.random() - 0.5) * 0.04, player.feet + eyeNow, player.z + (Math.random() - 0.5) * 0.04);
     culprit.head.getWorldPosition(_head);
     _m4.lookAt(camera.position, _head, camera.up);
     _q4.setFromRotationMatrix(_m4);
     camera.quaternion.slerp(_q4, 1 - Math.exp(-dt * 10));
     grab.t -= dt;
     if (grab.t <= 0) endGrab(false);
+  } else if (qte) {   // 범인의 공격을 피함 (QTE)
+    vel.set(0, 0, 0); bobAmt = 0;
+    updateQte(dt);
   } else if (tripCam) {   // 뒤돌아서 넘어진 범인을 봄 → 일어나는 걸 보고 "아이고" → 다시 앞을 봄
     vel.set(0, 0, 0); bobAmt = 0;
-    camera.position.set(player.x, player.feet + EYE, player.z);
+    camera.position.set(player.x, player.feet + eyeNow, player.z);
     tripCam.t += dt;
     if (tripCam.t < 2.9) {
       culprit.head.getWorldPosition(_head);
@@ -5698,19 +6242,20 @@ function update(dt, t) {
     }
   } else if (lookCam) {   // 한 곳을 돌아봤다가 원래 보던 쪽으로 돌아옴
     vel.set(0, 0, 0); bobAmt = 0;
-    camera.position.set(player.x, player.feet + EYE, player.z);
+    camera.position.set(player.x, player.feet + eyeNow, player.z);
     lookCam.t += dt;
-    if (lookCam.t < 1.7) {
-      _m4.lookAt(camera.position, lookCam.target, camera.up);
+    const hold = lookCam.hold || 1.7, ret = lookCam.ret || 0.8;
+    if (lookCam.t < hold) {
+      _m4.lookAt(camera.position, lookCam.fn ? lookCam.fn() : lookCam.target, camera.up);
       _q4.setFromRotationMatrix(_m4);
-      camera.quaternion.slerp(_q4, 1 - Math.exp(-dt * 5));
+      camera.quaternion.slerp(_q4, 1 - Math.exp(-dt * (lookCam.k || 5)));
     } else {
-      camera.quaternion.slerp(lookCam.back, 1 - Math.exp(-dt * 7));
-      if (lookCam.t > 2.5) { camera.quaternion.copy(lookCam.back); lookCam = null; }
+      camera.quaternion.slerp(lookCam.back, 1 - Math.exp(-dt * Math.max(7, 3 / ret)));
+      if (lookCam.t > hold + ret) { camera.quaternion.copy(lookCam.back); const cb = lookCam.onEnd; lookCam = null; if (cb) cb(); }
     }
   } else if (binCam) {   // 라운지 쓰레기통 클로즈업
     vel.set(0, 0, 0); bobAmt = 0;
-    camera.position.set(player.x, player.feet + EYE, player.z);
+    camera.position.set(player.x, player.feet + eyeNow, player.z);
     _head.set(BIN.x, 0.75, BIN.z);
     _m4.lookAt(camera.position, _head, camera.up);
     _q4.setFromRotationMatrix(_m4);
@@ -5719,7 +6264,7 @@ function update(dt, t) {
     if (binCam.t > 1.5) { binCam = null; fovTarget = 70; }
   } else if (ambushCam) {   // 방화문을 열자 오른쪽(404호 앞)의 범인을 쳐다봄
     vel.set(0, 0, 0); bobAmt = 0;
-    camera.position.set(player.x, player.feet + EYE, player.z);
+    camera.position.set(player.x, player.feet + eyeNow, player.z);
     culprit.head.getWorldPosition(_head);
     _m4.lookAt(camera.position, _head, camera.up);
     _q4.setFromRotationMatrix(_m4);
@@ -5728,7 +6273,7 @@ function update(dt, t) {
     if (ambushCam.t > 1.6) endAmbushCam();
   } else if (elevScene) {   // 고장 종이를 확대해서 바라봄
     vel.set(0, 0, 0); bobAmt = 0;
-    camera.position.set(player.x, player.feet + EYE, player.z);
+    camera.position.set(player.x, player.feet + eyeNow, player.z);
     _m4.lookAt(camera.position, PAPER_POS, camera.up);
     _q4.setFromRotationMatrix(_m4);
     camera.quaternion.slerp(_q4, 1 - Math.exp(-dt * 7));
@@ -5737,7 +6282,7 @@ function update(dt, t) {
     if (intro.standT >= 0) {
       intro.standT += dt / 1.4;
       const k = Math.min(1, intro.standT), e = k * k * (3 - 2 * k);
-      camera.position.set(SEAT.x + (STAND.x - SEAT.x) * e, SEAT.y + (player.feet + EYE - SEAT.y) * e, SEAT.z + (STAND.z - SEAT.z) * e);
+      camera.position.set(SEAT.x + (STAND.x - SEAT.x) * e, SEAT.y + (player.feet + eyeNow - SEAT.y) * e, SEAT.z + (STAND.z - SEAT.z) * e);
       if (k >= 1) {
         intro = null;
         flashOn = true; clickSound();
@@ -5749,7 +6294,7 @@ function update(dt, t) {
     camera.position.set(hiding.spot.x, hiding.spot.y + (hiding.spot.eye || 0.55), hiding.spot.z);
   } else if (mono) {   // 자막이 떠 있는 동안엔 못 움직임 (클릭해서 넘긴 뒤 이동)
     vel.set(0, 0, 0); bobAmt = 0;
-    camera.position.set(player.x, player.feet + EYE, player.z);
+    camera.position.set(player.x, player.feet + eyeNow, player.z);
   } else {
   // --- 이동 ---
   camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
@@ -5762,7 +6307,8 @@ function update(dt, t) {
     if (keys.KeyA) wish.sub(right);
   }
   const running = keys.ShiftLeft || keys.ShiftRight;
-  if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(running ? RUN : WALK);
+  if (running && crouch && wish.lengthSq() > 0) crouch = false;   // 뛰면 일어섬
+  if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(crouch ? CROUCH : running ? RUN : WALK);
   vel.lerp(wish, 1 - Math.exp(-dt * 10));
   player.x += vel.x * dt; player.z += vel.z * dt;
   resolveCollisions(player, player.feet);
@@ -5808,9 +6354,9 @@ function update(dt, t) {
   bobAmt += ((speed > 0.3 ? 1 : 0) - bobAmt) * Math.min(1, dt * 6);
   bobPhase += dt * speed * 3.4;
   const step = Math.floor(bobPhase / Math.PI);
-  if (step !== lastStep && speed > 0.5) footstep(running);
+  if (step !== lastStep && speed > 0.5 && !crouch) footstep(running);
   lastStep = step;
-  camera.position.set(player.x, player.feet + EYE - Math.abs(Math.sin(bobPhase)) * 0.045 * bobAmt, player.z);
+  camera.position.set(player.x, player.feet + eyeNow - Math.abs(Math.sin(bobPhase)) * 0.045 * bobAmt, player.z);
   }
 
   // --- 플래시: 시점을 살짝 늦게 따라옴 ---
@@ -6013,6 +6559,7 @@ function autoSave() {
     drawers: itsOf('drawer').map((it) => (it.opened ? 1 : 0)),
     bag: itsOf('bag').map((it) => (it.searched ? 1 : 0)),
     lap: laptopSeen, comp: story.comp || null, pc: [pcSeen, pcNotified], rooms: ROOMS.map((r) => (r.on ? 1 : 0)),
+    keyEv: story.keyEv || null, keyDrop: story.keyDrop || null, aiRaid: !!story.aiRaidDone,
   };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (err) { return; }
   savedEl.style.opacity = 1;
@@ -6037,6 +6584,10 @@ function loadSave() {
   [pcSeen, pcNotified] = s.pc;
   laptopSeen = laptopRead = !!s.lap;
   story.comp = s.comp === 'ambush' ? 'done' : s.comp;
+  story.aiRaidDone = !!s.aiRaid; story.keyDrop = s.keyDrop || null;
+  story.keyEv = s.keyEv === 'chase' ? 'gotKey' : s.keyEv === 'dropped' ? 'lost' : s.keyEv === 'flee' ? 'escaped'
+    : ['stalk', 'stalkSeen', 'ko', 'qte'].includes(s.keyEv) ? (hasItem('soju') ? 'armed' : 'gone') : (s.keyEv || undefined);
+  if (story.keyEv === 'gone') { spawnSoju(); if (navDoorRefs.council) navDoorRefs.council.locked = false; }
   if (story.comp === 'done') knockSign(true);
   itsOf('bag').forEach((it) => { if (laptopSeen && !it.searched) it.spark.visible = true; });
   ROOMS.forEach((r, i) => { r.on = !!s.rooms[i]; r.t0 = -10; if (r.rocker) r.rocker.rotation.x = r.on ? -0.25 : 0.25; });
@@ -6050,13 +6601,14 @@ function loadSave() {
   culprit.g.visible = false;
   roamOnLock = true;   // 화면을 클릭해서 시작하면 범인이 다시 돌아다님
   setObjective('학교를 탈출하십시오', false);
-  overlay.querySelector('.start').textContent = '클릭하여 이어하기 (마지막 저장 지점)';
+  overlay.querySelector('.start').textContent = '이어하기 (마지막 저장 지점)';
   return true;
 }
 controls.addEventListener('lock', () => {
   if (!roamOnLock) return;
   roamOnLock = false;
   if (story.comp === 'toOffice' || !story.comp) return;   // 아직 범인 안 나옴
+  if (['quiet', 'gotKey', 'gone', 'armed'].includes(story.keyEv)) return;   // 이벤트 사이엔 범인이 안 나옴
   if (story.comp === 'toComp') { startRoaming(); compLurk(); return; }
   startRoaming(true);
 });
@@ -6065,7 +6617,7 @@ else { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 저장소 없�
 
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
-  update(dt, clock.elapsedTime);
+  if (titleMode) updateTitle(dt, clock.elapsedTime); else update(dt, clock.elapsedTime);
   const lookBack = keys.KeyQ && controls.isLocked && !intro && !elevScene && story.stage !== 'peek';
   if (lookBack) {   // 뒤돌아보기: 렌더할 때만 180도 돌려서 보여줌
     _qBack.copy(camera.quaternion);
