@@ -5807,6 +5807,7 @@ function navPath(from, to) {
 }
 const edgeDoor = (a, b) => { const e = nav.adj[a].find((x) => x.to === b); return e ? e.door : null; };
 
+const LOSE_DIST = 25;   // 이만큼 벌어지면 범인이 놓침 (m, 한 층 차이 = 12m)
 const ai = { boostT: 0, active: false, state: 'idle', path: null, seg: 0, waitT: 0, doorT: 0, hitCD: 0, repathT: 0, percT: 0, seeing: false, lastSeen: null, lostT: 0, searchList: null, searchIdx: 0, sawHide: null, stepT: 0 };
 let dead = false;
 function playerDist() {
@@ -5989,7 +5990,7 @@ function perceive() {
   ai.seeing = false;
   // 밝은 곳(불 켜진 방/복도)에 있으면 복도 저 끝에서도 보임, 어두우면 가까이 와야 알아챔 (플래시를 켜면 조금 더 잘 보임)
   const lit = isBright(clock.elapsedTime);
-  let range = lit ? 60 : flashOn ? 20 : 9;
+  let range = lit ? 22 : flashOn ? 16 : 9;
   if (ai.boostT > 0) range = Math.max(range, 90);   // 매복 직후엔 복도 끝에서도 알아채고 끝까지 쫓아옴
   if (hiding || dy > 1.6 || d > range) return false;
   const yaw = culprit.g.rotation.y, fx = Math.sin(yaw), fz = Math.cos(yaw);
@@ -6056,7 +6057,8 @@ function updateAI(dt, t) {
       const spd = Math.hypot(vel.x, vel.z), pd = playerDist();
       const sameFloor = pd.dy < 2, inRoom = player.z < -0.25 || player.z > 3.2;
       let heard = false;
-      if (spd > 3) heard = sameFloor ? pd.d < 45 : pd.d < 70;
+      if (ai.leaveT > 0 && ai.state === 'patrol') heard = false;   // 떠나는 중엔 발소리 무시
+      else if (spd > 3) heard = sameFloor ? pd.d < 30 : pd.d < 18;
       else if (spd > 0.6 && !crouch) heard = sameFloor && pd.d < (inRoom ? 14 : 8);
       if (heard && t - (ai.heardT ?? -9) > 1.2) {
         if (ai.state !== 'investigate') culpritVoice('hmm');
@@ -6219,6 +6221,11 @@ function updateAI(dt, t) {
   }
   if (ai.state === 'chase') {
     if (ai.boostT > 0 && !hiding) { ai.lastSeen = { x: player.x, y: player.feet, z: player.z }; ai.lostT = 0; }   // 매복 추격 중엔 위치를 놓치지 않음
+    if (ai.boostT <= 0 && !ai.sawHide && d + 12 * Math.round(dy / FH) > LOSE_DIST) {   // 멀리 벌어지면 (다른 층이면 더 쉽게) 놓치고 다른 데로 감
+      ai.state = 'patrol'; ai.path = null; ai.waitT = 1.0; ai.leaveT = 20; ai.direct = false;
+      culpritVoice('hmm');
+      return;
+    }
     if (ai.sawHide) { ai.state = 'getHidden'; ai.path = null; }
     const canDirect = ai.seeing && d < 7 && segClear(pos.x, pos.z, player.x, player.z, pos.y);
     ai.noDirectT = (ai.noDirectT || 0) - dt;
@@ -6256,7 +6263,7 @@ function updateAI(dt, t) {
       ai.waitT -= dt;
       culprit.armR.rotation.x = -1.3 + Math.sin(t * 6) * 0.2;
       culprit.legL.rotation.x = culprit.legR.rotation.x = 0;
-      if (ai.waitT <= 0 && ai.searchIdx >= (ai.searchList ? ai.searchList.length : 0) - 1) { ai.state = 'patrol'; ai.path = null; ai.waitT = 1.5; }
+      if (ai.waitT <= 0 && ai.searchIdx >= (ai.searchList ? ai.searchList.length : 0) - 1) { ai.state = 'patrol'; ai.path = null; ai.waitT = 1.0; ai.leaveT = 40; }   // 다 뒤졌으면 다른 층으로 떠남
       return;
     }
     if (!ai.path) {
@@ -6322,7 +6329,8 @@ function updateAI(dt, t) {
       ai.waitT = 0.8;
     }
   } else if (ai.state === 'patrol') {
-    {   // 지금 있는 층 복도 불이 켜져 있으면 스위치로 가서 끔
+    const leaving = (ai.leaveT = (ai.leaveT || 0) - dt) > 0;   // 수색을 끝내고 떠나는 중: 근처 불·문·방은 신경 안 씀
+    if (!leaving) {   // 지금 있는 층 복도 불이 켜져 있으면 스위치로 가서 끔
       const fl = Math.round(pos.y / FH), cr = corrRooms[fl];
       if (cr && cr.on && Math.abs(pos.y - fl * FH) < 0.2 && pos.z > -0.2 && pos.z < 3.0 && t - (cr.offTried ?? -99) > 8) {
         cr.offTried = t;
@@ -6330,7 +6338,7 @@ function updateAI(dt, t) {
       }
     }
     ai.roomT = (ai.roomT || 0) - dt;
-    if (ai.roomT <= 0) {
+    if (!leaving && ai.roomT <= 0) {
       ai.roomT = 1;
       const room = ROOMS.find((r) => r.on && !r.id.startsWith('stair') && !r.id.startsWith('corridor') && !r.id.startsWith('wc') && r.id !== 'lobby1' && Math.abs(r.y0 - pos.y) < 1
         && t - (r.searchedAt ?? -99) > 45
@@ -6348,7 +6356,7 @@ function updateAI(dt, t) {
       }
     }
     ai.doorScanT = (ai.doorScanT || 0) - dt;
-    if (ai.doorScanT <= 0) {   // 근처에 열린 문이 있으면 닫고 감
+    if (!leaving && ai.doorScanT <= 0) {   // 근처에 열린 문이 있으면 닫고 감
       ai.doorScanT = 0.4;
       for (const dr of doors) {
         if (!dr.open || dr.locked || dr.label === '방화문' || Math.abs(dr.y0 - pos.y) > 0.5) continue;
@@ -6366,10 +6374,14 @@ function updateAI(dt, t) {
     ai.voiceT = (ai.voiceT ?? 8) - dt;
     if (ai.voiceT <= 0) { ai.voiceT = 9 + Math.random() * 12; culpritVoice(Math.random() < 0.35 ? 'hmm' : 'whistle'); }
     if (ai.waitT > 0) { ai.waitT -= dt; aiIdleAnim(); culprit.g.rotation.y += Math.sin(t * 1.5) * dt; return; }
-    if (aiFollow(1.5, dt)) {
-      // 다음 목적지: 반쯤은 플레이어가 있는 층 근처, 나머지는 아무 곳
-      // 다음 목적지: 1~4층 중 아무 층이나 골고루 고른 뒤 그 층의 아무 곳
-      const fl = (Math.random() * 4) | 0, onFl = PATROL_NODES.filter((p) => Math.round(p.y / FH) === fl);
+    if (aiFollow(leaving ? 2.0 : 1.5, dt)) {
+      if (leaving && ai.leftFrom != null && Math.round(pos.y / FH) !== ai.leftFrom) ai.leaveT = 0;   // 다른 층에 도착 → 평소대로
+      // 다음 목적지: 1~4층 중 아무 층이나 골고루 고른 뒤 그 층의 아무 곳 (떠나는 중이면 지금 층은 빼고)
+      const cur = Math.round(pos.y / FH);
+      if (leaving && ai.leftFrom == null) ai.leftFrom = cur;
+      if (!leaving) ai.leftFrom = null;
+      const floors = ai.leaveT > 0 ? [0, 1, 2, 3].filter((f) => f !== ai.leftFrom) : [0, 1, 2, 3];
+      const fl = floors[(Math.random() * floors.length) | 0], onFl = PATROL_NODES.filter((p) => Math.round(p.y / FH) === fl);
       const pick = onFl.length ? onFl[(Math.random() * onFl.length) | 0] : PATROL_NODES[(Math.random() * PATROL_NODES.length) | 0];
       if (!aiGoTo(pick.x, pick.y, pick.z)) ai.waitT = 0.5;
       else if (Math.random() < 0.5) ai.waitT = 0.5 + Math.random() * 1.5;
@@ -7107,7 +7119,8 @@ else if (titleMode && hasSave()) document.getElementById('btnResume').style.disp
 
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
-  if (titleMode) updateTitle(dt, clock.elapsedTime); else update(dt, clock.elapsedTime);
+  if (titleMode) updateTitle(dt, clock.elapsedTime);
+  else if (!(gameBegun && overlay.style.display === 'flex')) update(dt, clock.elapsedTime);   // ESC 일시정지 중엔 범인·이벤트 모두 멈춤
   const lookBack = keys.KeyQ && controls.isLocked && !intro && !elevScene && story.stage !== 'peek';
   if (lookBack) {   // 뒤돌아보기: 렌더할 때만 180도 돌려서 보여줌
     _qBack.copy(camera.quaternion);
