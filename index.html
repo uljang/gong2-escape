@@ -7252,6 +7252,20 @@ controls.addEventListener('lock', () => {
   startRoaming(true);
 });
 // 시연용 저장: ?demo=soju → 학생회실에서 소주병을 막 집은 상태 (학생회실을 나서면 범인이 등을 돌린 채 돌아다님)
+//              ?demo=dsr  → 설계지원실 도어락 앞, 문을 열기 전 (컴퓨터실에서 비번을 알아낸 직후)
+function makeDsrDemoSave() {
+  const unlock = new Set(['3-3-7.8'].map((k) => navDoorRefs[k]).filter(Boolean));   // 컴퓨터실만 열려 있음
+  const data = {
+    v: 1, player: { x: -13.6, z: 1.1, feet: 3 * FH }, yaw: 0, pitch: -0.05,   // 설계지원실 앞문(도어락)을 봄
+    inv: [{ id: 'dsrCode', name: '설계지원실 비번', icon: '📝', desc: '실습실 PC 메신저: "0915" — 도어락에 0915 입력 후 * 를 누르자.' }],
+    picked: ['computerKey'],
+    doors: doors.map((d) => [unlock.has(d) ? 0 : (d.locked ? 1 : 0), 0, null]),
+    drawers: itsOf('drawer').map(() => 0), bag: itsOf('bag').map(() => 0),
+    lap: false, comp: 'done', pc: [true, true], rooms: ROOMS.map((r) => (r.on ? 1 : 0)),
+    keyEv: null, keyDrop: null, aiRaid: false,
+  };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* 저장소 없음 */ }
+}
 function makeDemoSave() {
   const unlock = new Set(['office', 'council', '3-3-7.8', '3-0-7.8', '3-2-7.8', '1-3-1.2'].map((k) => navDoorRefs[k]).filter(Boolean));
   const data = {
@@ -7269,7 +7283,10 @@ function makeDemoSave() {
   };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* 저장소 없음 */ }
 }
-if (qs.get('demo')) {
+if (qs.get('demo') === 'dsr') {
+  makeDsrDemoSave();
+  if (loadSave()) { setObjective('설계지원실 도어락에 비밀번호를 입력하십시오', false); overlay.querySelector('.start').textContent = '시연 시작 (설계지원실 앞)'; }
+} else if (qs.get('demo')) {
   makeDemoSave();
   if (loadSave()) { setObjective('학생회실을 나가 범인을 찾으십시오', false); overlay.querySelector('.start').textContent = '시연 시작 (소주병 장면)'; }
 } else if (qs.get('continue')) loadSave();
