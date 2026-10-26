@@ -4389,7 +4389,7 @@ overlay.addEventListener('pointerdown', (e) => { initAudio(); if (!e.target.clos
 let gameBegun = false;
 document.getElementById('btnStart').addEventListener('click', (e) => {
   e.stopPropagation();
-  if (!gameBegun && !qs.get('continue')) { try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* 저장소 없음 */ } }   // 새 게임: 예전 저장 삭제
+  if (!gameBegun && !qs.get('continue') && !qs.get('demo')) { try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* 저장소 없음 */ } }   // 새 게임: 예전 저장 삭제
   exitTitle(); initAudio(); controls.lock();
 });
 document.getElementById('btnResume').addEventListener('click', (e) => { e.stopPropagation(); location.href = location.pathname + '?continue=1'; });
@@ -7251,7 +7251,28 @@ controls.addEventListener('lock', () => {
   if (story.comp === 'toComp') { startRoaming(); compLurk(); return; }
   startRoaming(true);
 });
-if (qs.get('continue')) loadSave();
+// 시연용 저장: ?demo=soju → 학생회실에서 소주병을 막 집은 상태 (학생회실을 나서면 범인이 등을 돌린 채 돌아다님)
+function makeDemoSave() {
+  const unlock = new Set(['office', 'council', '3-3-7.8', '3-0-7.8', '3-2-7.8', '1-3-1.2'].map((k) => navDoorRefs[k]).filter(Boolean));
+  const data = {
+    v: 1, player: { x: -1.6, z: 9.6, feet: 2 * FH }, yaw: 0, pitch: -0.05,   // 학생회실 안, 문 쪽을 봄
+    inv: [
+      { id: 'soju', name: '소주병', icon: '🍾', desc: '학생회실 테이블 위에 있던 빈 소주병. 묵직하다.' },
+      { id: 'dsrCode', name: '설계지원실 비번', icon: '📝', desc: '실습실 PC 메신저: "0915" — 도어락에 0915 입력 후 * 를 누르자.' },
+      { id: 'labHint', name: '화이트보드 메모', icon: '📝', desc: '학생회실 화이트보드: "콘크리트 교수님 생신 11월 17일"' },
+    ],
+    picked: ['computerKey', 'aiClubKey', 'cardkey', 'shutterKey', 'soju'],
+    doors: doors.map((d) => [unlock.has(d) ? 0 : (d.locked ? 1 : 0), 0, null]),
+    drawers: itsOf('drawer').map(() => 1), bag: itsOf('bag').map(() => 1),
+    lap: true, comp: 'done', pc: [true, true], rooms: ROOMS.map((r) => (r.on || r.id === 'council' ? 1 : 0)),
+    keyEv: 'armed', keyDrop: { x: -1.8, y: 2 * FH, z: 1.2 }, aiRaid: true,
+  };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* 저장소 없음 */ }
+}
+if (qs.get('demo')) {
+  makeDemoSave();
+  if (loadSave()) { setObjective('학생회실을 나가 범인을 찾으십시오', false); overlay.querySelector('.start').textContent = '시연 시작 (소주병 장면)'; }
+} else if (qs.get('continue')) loadSave();
 else if (titleMode && hasSave()) document.getElementById('btnResume').style.display = '';   // 시작 화면: 저장이 있으면 이어하기 (새 게임을 시작할 때 지움)
 
 renderer.setAnimationLoop(() => {
