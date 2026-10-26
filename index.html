@@ -4662,7 +4662,10 @@ function interact() {
   const it = findFocus();
   if (!it) return;
   if (it.type === 'item') { pickUp(it); return; }
-  if (it.type === 'hide') { enterHide(it.spot); return; }
+  if (it.type === 'hide') {
+    if (story.stage === 'chase' && !it.spot.main) { sayTimed('여기 숨을 틈이 없어…! 1층 라운지까지 뛰어!', 1800); return; }   // 첫 추격: 라운지 쓰레기통에만 숨을 수 있음
+    enterHide(it.spot); return;
+  }
   const lateGame = story.comp === 'ambush' || story.comp === 'done' || exploreMode;
   if (it.type === 'keypad') { if (!it.door.locked) showMsg('이미 열려 있다.'); else if (!lateGame) monologue(['지금은 집에 가야한다']); else openKeypad(it.door); return; }
   if (it.type === 'door') {
