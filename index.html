@@ -5159,6 +5159,11 @@ function startChase() {
   sayTimed('뭔데뭔데뭔데뭔데?!!', 2000);
   setObjective('1층 라운지 쪽으로 도망치십시오', false);
   camera.position.set(player.x, player.feet + EYE, player.z);
+  chasePrev = { x: player.x, z: player.z, feet: player.feet };
+  {   // 맞은편 계단으로 뛰어 들어가 내려가는 계단참까지는 저절로 (그 뒤부터 직접 조작)
+    const mx = (LEFT_STAIR.xa + LEFT_STAIR.xb) / 2, dx = mx + 1.15;   // 내려가는 쪽 계단 (동쪽 절반)
+    autoRun = { i: 0, pts: [[STUDIO.doorX - 0.2, 1.8], [mx, 2.7], [mx, 4.0], [dx, 4.5, -0.35], [dx, 8.9, -0.35], [dx, 9.7, -0.1]] };
+  }
   trail.length = 0;
   const y = 2 * FH;
   trail.push({ x: culprit.g.position.x, y, z: -2.0 }, { x: STUDIO.doorX, y, z: -0.6 }, { x: STUDIO.doorX, y, z: 0.9 });
@@ -5324,7 +5329,14 @@ function setObjective(text, announce = true) {
 }
 function showObjective() { setObjective('학교를 탈출하십시오'); }
 const chased = () => ['chase', 'search', 'gone', 'free', 'explore'].includes(story.stage);   // 첫 추격 이후엔 다 열림
-let blockMsgT = -10, homePrev = null;
+let blockMsgT = -10, homePrev = null, chasePrev = null, autoRun = null;
+function endAutoRun() {   // 계단참 도착 → 다음 계단(아래로) 쪽을 돌아보고 조작을 넘김
+  autoRun = null;
+  const tgt = new THREE.Vector3(LEFT_STAIR.xa + 1.0, FH + 1.4, CW + 3.0);
+  _m4.lookAt(camera.position, tgt, camera.up);
+  lookCam = { t: 0, k: 7, hold: 0.45, ret: 0.01, target: tgt, back: new THREE.Quaternion().setFromRotationMatrix(_m4) };
+  sayTimed('계속 내려가!', 1400);
+}
 const binGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkleTex, color: 0x9fffc0, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false }));
 binGlow.position.set(BIN.x, 1.5, BIN.z); binGlow.visible = false;
 scene.add(binGlow);
@@ -6908,11 +6920,36 @@ function update(dt, t) {
     if (keys.KeyD) wish.add(right);
     if (keys.KeyA) wish.sub(right);
   }
-  const running = keys.ShiftLeft || keys.ShiftRight;
+  if (autoRun) {   // 첫 추격 시작: 계단참까지 저절로 뛰어감 (시점도 진행 방향으로)
+    let wp = autoRun.pts[autoRun.i];
+    if (Math.hypot(wp[0] - player.x, wp[1] - player.z) < 0.3) { autoRun.i++; wp = autoRun.pts[autoRun.i]; }
+    if (!wp) endAutoRun();
+    else {
+      const dx = wp[0] - player.x, dz = wp[1] - player.z, dd = Math.hypot(dx, dz) || 1;
+      wish.set(dx / dd, 0, dz / dd);
+      _q4.setFromEuler(new THREE.Euler(wp[2] ?? -0.12, Math.atan2(-dx, -dz), 0, 'YXZ'));
+      camera.quaternion.slerp(_q4, 1 - Math.exp(-dt * 6));
+    }
+  }
+  const running = !!autoRun || keys.ShiftLeft || keys.ShiftRight;
   if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(crouch ? (running ? RUN * 0.9 : CROUCH) : running ? RUN : WALK);   // 웅크린 채 Shift: 거의 달리기 속도 (발소리는 남)
   vel.lerp(wish, 1 - Math.exp(-dt * 10));
   player.x += vel.x * dt; player.z += vel.z * dt;
   resolveCollisions(player, player.feet);
+  if (story.stage === 'chase') {   // 첫 추격: 설계실 앞 → 바로 맞은편 계단 → 1층으로만 갈 수 있음
+    const f = player.feet, inStair = player.x > LEFT_STAIR.xa - 0.3 && player.x < LEFT_STAIR.xb + 0.2 && player.z > 3.05 && player.z < WZ1;
+    let ok = f < 2 * FH + 0.3;                                                          // 위층 X
+    if (ok && !inStair) {
+      if (Math.abs(f - 2 * FH) < 0.4) ok = player.x < -35.5 && player.z > -0.25;       // 3층: 설계실 앞 ~ 계단 문까지만
+      else if (Math.abs(f - FH) < 0.4) ok = false;                                      // 2층으로 못 나감
+    }
+    if (ok) chasePrev = { x: player.x, z: player.z, feet: player.feet };
+    else {
+      if (chasePrev) Object.assign(player, chasePrev);
+      vel.set(0, 0, 0);
+      if (t - blockMsgT > 2.5) { blockMsgT = t; sayTimed('아래로! 1층까지 내려가야 해!', 1800); }
+    }
+  }
   if (story.stage === 'home') {   // 귀가 선택: 왼쪽 끝 계단으로 내려가 1층 왼쪽(엘베 쪽) 출입문으로 나가는 길만 허용
     const f = player.feet, inStair = player.x < -36.4 && player.z > 3.05 && player.z < WZ1;
     let ok = f < 2 * FH + 0.3;                                                         // 4층으로 못 올라감
