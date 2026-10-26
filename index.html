@@ -238,7 +238,7 @@
 <div id="objective">목표 &nbsp;·&nbsp; 학교를 탈출하십시오</div>
 <div id="announce">학교를 탈출하십시오</div>
 <div id="fade"></div>
-<div id="disclaimer">이 게임은 허구이며 현실과 관련 없습니다.</div>
+<div id="disclaimer"><div style="text-align:center">이 게임은 허구이며 현실과 관련 없습니다.<div style="margin-top:14px;font-size:15px;color:#a39b8f;letter-spacing:2px">임산부, 노약자, 어린이도 하셔도 됩니다</div></div></div>
 <div id="ending">
   <div id="endTag"></div>
   <h1 id="endTitle"></h1>
@@ -1196,6 +1196,48 @@ function makeAutoDoor(cx, cz, y0, axis) {
 const wcLights = [];
 const dimAnchors = [[], [], []];   // 1~3층 복도 약하게 켜진 등 위치
 
+function modelPanel(x, y, z) {   // A1(594×841mm) 우드락 판넬: 건물 모형 소개 (복도 쪽을 봄)
+  const W = 0.594, H = 0.841;
+  const tex = labelTex(594, 841, (g, w, h) => {
+    g.fillStyle = '#f6f5f0'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#1d1d1d'; g.fillRect(0, 0, w, 6);
+    g.fillStyle = '#888'; g.font = '13px sans-serif'; g.fillText('2026 ARCHITECTURAL DESIGN STUDIO · CAPSTONE', 30, 40);
+    g.fillStyle = '#111'; g.font = 'bold 54px "Malgun Gothic", sans-serif'; g.fillText('VERTI-HAVEN', 30, 100);
+    g.font = '20px "Malgun Gothic", sans-serif'; g.fillStyle = '#444'; g.fillText('도심 속 수직 정원을 품은 복합문화시설', 30, 132);
+    // 모형 사진 대신 그린 아이소메트릭 매스
+    const ox = 300, oy = 420, iso = (x3, y3, z3) => [ox + (x3 - z3) * 0.87, oy + (x3 + z3) * 0.5 - y3];
+    const boxIso = (x0, z0, sx, sz, h, top, l, r) => {
+      const P = (a, b, c) => iso(x0 + a, b, z0 + c);
+      const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); g.fill(); g.strokeStyle = '#2a2a2a'; g.lineWidth = 2; g.stroke(); };
+      poly([P(0, h, 0), P(sx, h, 0), P(sx, h, sz), P(0, h, sz)], top);
+      poly([P(0, 0, sz), P(sx, 0, sz), P(sx, h, sz), P(0, h, sz)], l);
+      poly([P(sx, 0, 0), P(sx, 0, sz), P(sx, h, sz), P(sx, h, 0)], r);
+    };
+    g.fillStyle = '#c9c6bd'; g.fillRect(40, 170, w - 80, 360);
+    boxIso(-160, -60, 320, 200, 4, '#a89f8c', '#8f8775', '#7d7564');                  // 대지
+    boxIso(-120, -30, 200, 140, 50, '#ffffff', '#d6d6d2', '#b4b4b0');                 // 저층부
+    boxIso(-80, -10, 90, 80, 210, '#ffffff', '#dcdcd8', '#b8b8b4');                   // 타워
+    for (let i = 1; i < 7; i++) { const [a1, b1] = iso(-80, 50 + i * 26, 70), [a2, b2] = iso(10, 50 + i * 26, 70); g.strokeStyle = '#7fae6a'; g.lineWidth = 4; g.beginPath(); g.moveTo(a1, b1); g.lineTo(a2, b2); g.stroke(); }   // 수직 정원
+    boxIso(40, 40, 60, 60, 90, '#f4f4f0', '#d0d0cc', '#acaca8');
+    for (const [tx, tz] of [[-140, 120], [120, -40], [130, 110]]) { const [px, py] = iso(tx, 12, tz); g.fillStyle = '#6f9c5c'; g.beginPath(); g.arc(px, py, 10, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#666'; g.font = '12px sans-serif'; g.fillText('MODEL  S = 1 : 200', 52, 520);
+    // 개요 / 다이어그램
+    g.fillStyle = '#111'; g.font = 'bold 18px "Malgun Gothic", sans-serif'; g.fillText('설계 개요', 30, 570);
+    g.font = '14px "Malgun Gothic", sans-serif'; g.fillStyle = '#333';
+    ['대지위치 | 광주광역시 북구 용봉동 일원', '용도 | 문화 및 집회시설 + 근린생활시설', '규모 | 지하 1층 / 지상 9층', '구조 | 철근콘크리트조 + 철골 트러스', '연면적 | 8,450 ㎡'].forEach((l, i) => g.fillText(l, 30, 598 + i * 22));
+    g.fillStyle = '#111'; g.font = 'bold 18px "Malgun Gothic", sans-serif'; g.fillText('CONCEPT', 330, 570);
+    g.strokeStyle = '#333'; g.lineWidth = 2;
+    for (let i = 0; i < 3; i++) { const bx = 335 + i * 75; g.strokeRect(bx, 590, 50, 50 - i * 0); if (i) { g.beginPath(); g.moveTo(bx - 20, 615); g.lineTo(bx - 6, 615); g.stroke(); } }
+    g.fillStyle = '#7fae6a'; g.fillRect(492, 596, 38, 38);
+    g.fillStyle = '#555'; g.font = '11px "Malgun Gothic", sans-serif'; g.fillText('매스 → 비움 → 수직 녹화', 335, 660);
+    g.fillStyle = '#1d1d1d'; g.fillRect(0, h - 70, w, 70);
+    g.fillStyle = '#fff'; g.font = 'bold 22px "Malgun Gothic", sans-serif'; g.fillText('제작  기효윤', 30, h - 28);
+    g.font = '13px "Malgun Gothic", sans-serif'; g.fillStyle = '#bbb'; g.fillText('건축학부 4학년 · 건축설계스튜디오', 300, h - 30);
+  });
+  sbox(x - W / 2, x + W / 2, y - H / 2, y + H / 2, z, z + 0.01, 'deskWhite');   // 우드락 두께
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.75 }));
+  m.position.set(x, y, z + 0.0115); scene.add(m);
+}
 function evacMap(x, y, z) {   // 화재 시 피난안내도 (복도 쪽을 봄)
   const tex = labelTex(640, 480, (g, W, H) => {
     g.fillStyle = '#fbfbf7'; g.fillRect(0, 0, W, H);
@@ -2080,46 +2122,87 @@ function designSupportRoom() {
   }
   // 칠판 옆: 바퀴 달린 화이트보드 (낙서)
   {
-    const doodle = labelTex(1280, 800, (g) => {   // 건축공학 낙서: 보 해석, 모멘트도, 트러스, 단면, 공식 (2배 해상도로 그림)
-      g.fillStyle = '#f7f8f6'; g.fillRect(0, 0, 1280, 800);
+    const doodle = labelTex(1280, 800, (g) => {   // 마커 낙서가 덕지덕지: 추천곡, 마감 일정(줄 긋기), 캐릭터 낙서, 지운 자국 (2배 해상도)
+      let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      g.fillStyle = '#f4f5f1'; g.fillRect(0, 0, 1280, 800);
       g.scale(2, 2);
+      for (let i = 0; i < 70; i++) {   // 덜 지운 자국 (회색 얼룩)
+        g.fillStyle = `rgba(90,95,100,${0.03 + rnd() * 0.07})`;
+        g.beginPath(); g.ellipse(rnd() * 640, rnd() * 400, 15 + rnd() * 60, 5 + rnd() * 18, rnd() * 3, 0, Math.PI * 2); g.fill();
+      }
       g.lineCap = 'round'; g.lineJoin = 'round';
-      g.font = 'bold 30px "Malgun Gothic", sans-serif'; g.fillStyle = '#c41a1a'; g.fillText('구조설계 과제 #3  (D-2)', 20, 40);
-      // 단순보 + 등분포하중
-      g.strokeStyle = '#1a3fa0'; g.lineWidth = 3;
-      g.beginPath(); g.moveTo(30, 120); g.lineTo(270, 120); g.stroke();
-      g.beginPath(); g.moveTo(30, 120); g.lineTo(20, 140); g.lineTo(40, 140); g.closePath(); g.stroke();
-      g.beginPath(); g.arc(270, 130, 9, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.moveTo(258, 141); g.lineTo(282, 141); g.stroke();
-      for (let x = 40; x <= 260; x += 22) { g.beginPath(); g.moveTo(x, 78); g.lineTo(x, 112); g.moveTo(x - 4, 105); g.lineTo(x, 112); g.lineTo(x + 4, 105); g.stroke(); }
-      g.beginPath(); g.moveTo(36, 78); g.lineTo(264, 78); g.stroke();
-      g.font = '18px "Malgun Gothic", sans-serif'; g.fillStyle = '#1a3fa0'; g.fillText('w = 20 kN/m', 105, 70); g.fillText('L = 6 m', 125, 165);
-      // 모멘트도 (포물선)
-      g.strokeStyle = '#d86a1a'; g.beginPath(); g.moveTo(30, 185); g.lineTo(270, 185); g.stroke();
-      g.beginPath(); for (let i = 0; i <= 40; i++) { const x = 30 + i * 6, u = i / 40; g.lineTo(x, 185 + 4 * u * (1 - u) * 55); } g.stroke();
-      g.fillStyle = '#d86a1a'; g.fillText('BMD', 280, 210); g.fillText('Mmax = wL²/8 = 90 kN·m', 70, 268);
-      // 트러스
-      g.strokeStyle = '#1a7a3a'; g.lineWidth = 2.5;
-      const tx = 340, ty = 150;
-      g.beginPath(); g.moveTo(tx, ty); g.lineTo(tx + 240, ty); g.moveTo(tx, ty); g.lineTo(tx + 120, ty - 75); g.lineTo(tx + 240, ty);
-      for (const k of [60, 120, 180]) { g.moveTo(tx + k, ty); g.lineTo(tx + 120 + (k - 120) * 0.0, ty - 75 * (1 - Math.abs(k - 120) / 120)); }
-      g.moveTo(tx + 60, ty); g.lineTo(tx + 60, ty - 37); g.moveTo(tx + 180, ty); g.lineTo(tx + 180, ty - 37); g.stroke();
-      g.fillStyle = '#1a7a3a'; g.font = '17px "Malgun Gothic", sans-serif'; g.fillText('하우 트러스 — 부재력 다시 구하기!!', tx, ty + 26);
-      // 공식 / 메모
-      g.fillStyle = '#222'; g.font = '19px "Malgun Gothic", sans-serif';
-      g.fillText('σ = M·y / I    τ = VQ / Ib', 330, 220);
-      g.fillText('δmax = 5wL⁴ / 384EI  → 처짐 L/360 이하?', 330, 250);
-      // 철근콘크리트 단면
-      g.strokeStyle = '#222'; g.lineWidth = 2.5; g.strokeRect(40, 295, 90, 85);
-      g.fillStyle = '#222'; for (const x of [55, 85, 115]) { g.beginPath(); g.arc(x, 365, 6, 0, Math.PI * 2); g.fill(); }
-      g.font = '16px "Malgun Gothic", sans-serif'; g.fillText('400×600', 45, 290); g.fillText('3-D22', 140, 368); g.fillText("fck 24 / fy 400", 140, 340);
-      // 건물 입면 스케치 + 방위
-      g.strokeStyle = '#555'; g.lineWidth = 2;
-      g.strokeRect(330, 290, 150, 90); for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(330, 290 + i * 22.5); g.lineTo(480, 290 + i * 22.5); g.stroke(); }
-      for (let i = 1; i < 5; i++) { g.beginPath(); g.moveTo(330 + i * 30, 290); g.lineTo(330 + i * 30, 380); g.stroke(); }
-      g.beginPath(); g.moveTo(320, 290); g.lineTo(405, 262); g.lineTo(490, 290); g.stroke();
-      g.fillStyle = '#555'; g.fillText('입면도 S:1/100', 340, 398);
-      g.beginPath(); g.moveTo(560, 330); g.lineTo(560, 280); g.moveTo(552, 292); g.lineTo(560, 280); g.lineTo(568, 292); g.stroke(); g.fillText('N', 553, 275);
-      g.fillStyle = '#c41a1a'; g.font = 'bold 20px "Malgun Gothic", sans-serif'; g.fillText('구조계산 다시!!', 500, 365);
+      for (let i = 0; i < 40; i++) {   // 희미하게 남은 옛 글씨
+        g.strokeStyle = `rgba(80,80,90,${0.07 + rnd() * 0.1})`; g.lineWidth = 1 + rnd();
+        g.beginPath(); let x = rnd() * 620, y = rnd() * 390; g.moveTo(x, y);
+        for (let k = 0; k < 6; k++) { x += 4 + rnd() * 8; y += (rnd() - 0.5) * 8; g.lineTo(x, y); }
+        g.stroke();
+      }
+      const T = (str, x, y, size, col = '#111', rot = 0, bold = true) => {
+        g.save(); g.translate(x, y); g.rotate(rot + (rnd() - 0.5) * 0.04);
+        g.font = `${bold ? 'bold ' : ''}${size}px "Malgun Gothic", sans-serif`; g.fillStyle = col; g.fillText(str, 0, 0);
+        g.restore();
+      };
+      const strike = (x0, x1, y) => { g.strokeStyle = '#111'; g.lineWidth = 2.4; g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y + (rnd() - 0.5) * 3); g.stroke(); };
+      const face = (x, y, r, crown) => {   // 낙서 얼굴
+        g.strokeStyle = '#111'; g.lineWidth = 2.4;
+        g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.arc(x - r * 0.35, y - r * 0.15, r * 0.12, 0, Math.PI * 2); g.arc(x + r * 0.35, y - r * 0.15, r * 0.12, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(x, y + r * 0.2, r * 0.45, 0.15, Math.PI - 0.15); g.stroke();
+        if (crown) { g.beginPath(); g.moveTo(x - r * 0.4, y - r); g.lineTo(x - r * 0.3, y - r * 1.45); g.lineTo(x, y - r * 1.1); g.lineTo(x + r * 0.3, y - r * 1.45); g.lineTo(x + r * 0.4, y - r); g.stroke(); }
+      };
+      const heart = (x, y, sz, col = '#1a1a1a') => { g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y + sz); g.bezierCurveTo(x - sz * 1.4, y - sz * 0.2, x - sz * 0.5, y - sz * 1.2, x, y - sz * 0.3); g.bezierCurveTo(x + sz * 0.5, y - sz * 1.2, x + sz * 1.4, y - sz * 0.2, x, y + sz); g.stroke(); };
+      // 왼쪽 위: 추천곡 + 토마토
+      T('〈오늘의 추천곡〉', 112, 34, 22, '#1a1a1a', -0.02, true);
+      T('집에 가고 싶다', 150, 70, 17, '#1a1a1a', -0.03);
+      T('동글동글 방실방실', 160, 98, 14);
+      T('양꼬치 먹자~^^ 전거', 238, 82, 10, '#1a1a1a', -0.25);
+      g.strokeStyle = '#1a1a1a'; g.lineWidth = 1.6;
+      g.beginPath(); g.ellipse(45, 70, 16, 14, 0, 0, Math.PI * 2); g.stroke();   // 토마토
+      for (let i = 0; i < 5; i++) { const an = -Math.PI / 2 + (i - 2) * 0.45; g.beginPath(); g.moveTo(45, 57); g.lineTo(45 + Math.cos(an) * 10, 50 + Math.sin(an) * 6); g.stroke(); }
+      T('먹다 남은 토마토 맛토맛', 20, 100, 10);
+      T('vs.', 40, 118, 11);
+      face(45, 140, 12); T('잘 익은 토마토 맛토맛', 14, 168, 9);
+      T('내가 최고야♡', 22, 196, 12, '#1a1a1a', -0.05);
+      face(78, 205, 11);
+      T('4학년 공학나와', 30, 255, 10); T('설계가 최고다!', 36, 268, 10);
+      g.strokeStyle = '#111'; g.lineWidth = 2;   // 빙글빙글 원
+      for (let i = 1; i < 5; i++) { g.beginPath(); g.arc(105, 236, i * 10 + rnd() * 3, 0, Math.PI * 2); g.stroke(); }
+      g.beginPath(); g.moveTo(60, 236); g.lineTo(150, 236); g.moveTo(105, 192); g.lineTo(105, 285); g.stroke();
+      T('← 이것도 자기가 함', 125, 200, 10);
+      T('메롱~ 메롱~ 메롱', 130, 150, 12, '#1a1a1a', 0.05);
+      T('위치 → 데센', 26, 300, 9); T('곽지에디비', 30, 312, 8);
+      // 가운데: 큰 얼굴 낙서 + 글씨
+      face(245, 70, 34, true); heart(205, 30, 5); heart(285, 32, 5);
+      T('다들 지치지 마라 탕탕이 8월에 여행 가자~', 200, 140, 11, '#1a1a1a', 0.04);
+      T('졸업하고 싶다…', 175, 178, 22, '#1a1a1a', 0, false);
+      T('바보 말미잘', 210, 200, 11);
+      T('미꾸라지 무당벌레 몬치치', 300, 200, 12);
+      g.strokeStyle = '#1a1a1a'; g.lineWidth = 2; g.beginPath(); g.moveTo(300, 215); g.bezierCurveTo(310, 240, 290, 250, 330, 250); g.bezierCurveTo(340, 230, 320, 220, 345, 222); g.stroke();   // 사인
+      // 아래 가운데: 마감 일정 (줄 그어 지움)
+      const sched = [['스건시 제출', '0610', true], ['인턴십 발표', '0609 0611', true], ['스건시 과제', '0615', true], ['스건시 기말', '0616', true], ['적산 기말', '0617', true], ['패널 마감', '0624', false], ['졸업전시', '0701~0704', true], ['기사 실기', '0719 0726', true], ['포트폴리오', '0315', false]];
+      sched.forEach(([a, d, done], i) => { const y = 230 + i * 17; T(a, 160, y, 12); T(d, 225, y, 12); if (done) strike(156, 270, y - 4); });
+      T('← 설비 기말, 철콘 기말 ← 누가 함?', 275, 335, 10);
+      T('→ 내가', 295, 360, 11);
+      T('다들 캡스톤 파이팅!! 이번 졸업만…', 230, 285, 12, '#1a1a1a', -0.02);
+      T('X', 240, 304, 12); T('우리만 ㄱ', 236, 322, 12);
+      T('놀러가자 ^^', 330, 300, 14, '#1a1a1a', -0.06);
+      // 오른쪽: 캐릭터 낙서 + 말풍선
+      T('그림들,', 420, 60, 15); T('눈으로만 감상하세요^^', 400, 80, 13);
+      face(360, 70, 15, true); T('구조의 왕', 335, 52, 11);
+      face(370, 140, 14); T('벌꿀', 335, 118, 11); T('오소리', 335, 132, 11);
+      face(420, 150, 15); face(455, 175, 13);
+      g.strokeStyle = '#111'; g.lineWidth = 2;
+      for (const [bx, by, w, txt] of [[440, 115, 44, '아, 뭐요'], [480, 130, 40, '으어~?']]) { g.beginPath(); g.ellipse(bx, by, w / 2 + 6, 12, 0, 0, Math.PI * 2); g.stroke(); T(txt, bx - w / 2 + 2, by + 4, 10); }
+      T('뱀띠', 410, 215, 11); face(440, 235, 14); T('부끄부끄', 420, 268, 9);
+      g.beginPath(); g.moveTo(520, 70); g.bezierCurveTo(500, 140, 560, 200, 520, 260); g.stroke();   // 구역 나누는 줄
+      face(565, 90, 13); face(590, 150, 14); face(560, 210, 12);
+      g.beginPath(); g.moveTo(540, 245); g.lineTo(575, 245); g.lineTo(560, 275); g.closePath(); g.stroke();   // 새?
+      T('사, 사', 585, 240, 10);
+      T('토마토', 575, 290, 10);
+      T('힘내 ㅎㅎ', 470, 300, 11); T('귀여우니까 봐줌', 470, 316, 11);
+      T('20, 21, 23 파이팅!!!', 430, 360, 15, '#1a1a1a', -0.03);
+      heart(510, 330, 4); heart(560, 334, 4);
+      T('꿈은 크게', 612, 300, 10, '#1a1a1a', Math.PI / 2);
     });
     const bw = 1.5, grp = new THREE.Group();
     const board = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.95, 0.03), M.deskWhite); board.position.y = 1.375; grp.add(board);
@@ -3088,6 +3171,7 @@ for (let n = 0; n < 4; n++) {
     }
   }
   if (n === 3) [-38.5, -29.5, -21, -12.5, 7.5, 16.5, 25.5, 34.5].forEach((x, i) => archModel(x, y0 + 0.86, 2.7, i));   // 사물함 위 건축 모형
+  if (n === 3) modelPanel(-33.6, y0 + 1.55, 0.004);   // 409호 근처: A1 건물 모형 소개 판넬
   if (n === 3) [-32.6, -25.2, -19.6, -14.9, -10.9, -7.6, -6.0, 5.8, 10.4, 12.3, 14.8, 19.3, 23.6, 28.3, 30.6, 33.0, 37.3]
     .forEach((x, i) => archModel(x, y0 + 0.86, 2.7, [5, 6, 2, 5, 0, 6, 3, 5, 6, 1, 5, 4, 6, 5, 2, 6, 5][i]));   // 건축·도시 모형 추가
   if (n === 3) for (const x of [-34.0, -16.8, 21.0]) {   // 사물함 위 빗물받이통 (파란 통)
@@ -6016,6 +6100,13 @@ function perceive() {
   ai.seeing = true;
   return true;
 }
+function sawFlashlight() {   // 범인 앞쪽(시야 안)에서 플레이어 손전등 불빛이 보이는지 (멀거나 어두워서 사람은 못 알아봄)
+  const p = culprit.g.position, { d, dy } = playerDist();
+  if (dy > 1.6 || d > 30 || d < 2) return false;
+  const yaw = culprit.g.rotation.y, fx = Math.sin(yaw), fz = Math.cos(yaw);
+  if ((fx * (player.x - p.x) + fz * (player.z - p.z)) / d < 0.3) return false;
+  return losClear(p.x, p.z, player.x, player.z, Math.max(p.y, player.feet) + 1.45);
+}
 function startSearch() {
   ai.state = 'search';
   const ls = ai.lastSeen;
@@ -6052,6 +6143,12 @@ function updateAI(dt, t) {
         else ai.state = 'chase';
       }
       ai.rearSense = false;
+    } else if (!hiding && flashOn && ['patrol', 'search', 'checkRoom', 'roomLook', 'roomExit', 'lightsOff'].includes(ai.state) && !(ai.leaveT > 0 && ai.state === 'patrol') && sawFlashlight() && t - (ai.heardT ?? -9) > 1.2) {
+      // 플레이어는 못 봤지만 손전등 불빛을 봄 → 확인하러 옴
+      culpritVoice('hmm');
+      ai.heardT = t;
+      ai.lastSeen = { x: player.x, y: player.feet, z: player.z };
+      ai.state = 'investigate'; ai.path = null; ai.fast = false;
     } else if (!hiding && (ai.ignoreStepsT || 0) <= 0 && ['patrol', 'search', 'investigate', 'checkRoom', 'roomLook', 'roomOff', 'roomExit', 'lightsOff'].includes(ai.state)) {
       // 발소리: 뛰면 다른 층에서도 듣고 바로 옴 / 방 안에서 걸으면 불이 꺼져 있어도 들어와 봄
       const spd = Math.hypot(vel.x, vel.z), pd = playerDist();
@@ -6523,7 +6620,7 @@ function gameOver() {
 const eyeEl = document.getElementById('eye');
 let eyeSeenT = -99;   // 눈알이 마지막으로 떠 있던 시각 (추격이 확실히 끝났는지 판단)
 const EYE_ALERT = ['chase', 'getHidden', 'turn', 'grab', 'recover', 'trip', 'qte', 'stun'];
-const EYE_LOOK = ['investigate', 'search', 'raid', 'raidEnter', 'raidLap'];
+const EYE_LOOK = ['investigate', 'raid', 'raidEnter', 'raidLap'];   // 소리를 들었거나 불빛을 봐서 확인하러 올 때 (놓친 뒤 수색은 제외)
 function updateEye() {
   let mode = '';
   if (culprit.g.visible && !dead && !intro && ai.state !== 'lurk' && story.comp !== 'toComp') {
